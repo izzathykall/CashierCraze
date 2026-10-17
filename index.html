@@ -4,15 +4,15 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#173f37"><meta name="description" content="Jaga kaunter pasar mini anda. Scan barang, timbang hasil segar, kira baki dan bina Kedai Kita!">
 <title>Kedai Kita — Cashier Simulator</title>
-<link rel="stylesheet" href="style.css">
+<link id="gameStyles" rel="stylesheet" href="style.css?v=2026-10-17-pos-v5-4">
 </head>
 <body>
 <div class="app" id="gameApp">
   <header class="topbar">
-    <a class="brand" href="./" aria-label="Kedai Kita"><span class="brand-icon" data-icon="basket"></span><span>Kedai<span class="brand-light">Kita<span class="brand-dot">.</span></span><small>PASAR MINI, CERITA BESAR</small></span></a>
+    <a class="brand" href="./" aria-label="Kedai Kita"><span class="brand-icon" data-icon="basket"></span><span>Kedai<span class="brand-light">Kita<span class="brand-dot">.</span></span><small>SIMULATOR JURUWANG</small></span></a>
     <div class="day-pill"><span class="sun" data-icon="sun"></span><span><small>SYIF SEMASA</small><b id="dayLabel">Hari 01</b></span><span class="open-tag">BUKA</span></div>
     <div class="top-stats"><span><small>DUIT KEDAI</small><b id="walletLabel">RM 0.00</b></span><span class="combo-stat"><small>COMBO</small><b id="comboLabel">×0 <span>✦</span></b></span></div>
-    <nav class="tools" aria-label="Kawalan game"><button id="shopBtn" class="icon-btn" title="Naik taraf kedai" aria-label="Naik taraf kedai" data-icon="shop"></button><button id="soundBtn" class="icon-btn" title="Bunyi" aria-label="Bunyi" data-icon="volume"></button><button id="fullBtn" class="icon-btn" title="Skrin penuh" aria-label="Skrin penuh" data-icon="expand"></button><button id="pauseBtn" class="icon-btn" title="Jeda dan bantuan" aria-label="Jeda dan bantuan" data-icon="pause"></button></nav>
+    <nav class="tools" id="gameTools" aria-label="Kawalan game"><button id="shopBtn" class="icon-btn" title="Naik taraf kedai" aria-label="Naik taraf kedai" data-icon="shop"></button><button id="accountBtn" class="account-nav-btn" title="Log masuk / akaun" aria-label="Akaun dan simpanan permainan"><span data-icon="user"></span><span id="accountBtnText">Akaun</span></button><button id="soundBtn" class="icon-btn" title="Bunyi" aria-label="Bunyi" data-icon="volume"></button><button id="fullBtn" class="icon-btn" title="Skrin penuh" aria-label="Skrin penuh" data-icon="expand"></button><button id="pauseBtn" class="icon-btn" title="Jeda dan bantuan" aria-label="Jeda dan bantuan" data-icon="pause"></button></nav>
   </header>
   <nav class="utility-bar" aria-label="Fungsi kedai">
     <button id="missionBtn"><span data-icon="flag"></span><span>Misi</span><i></i></button>
@@ -20,9 +20,10 @@
     <button id="inventoryBtn"><span data-icon="basket"></span><span>Inventori</span></button><button id="catalogueBtn"><span data-icon="book"></span><span>Katalog</span></button>
     <button id="settingsBtn"><span data-icon="settings"></span><span>Tetapan</span></button>
     <button id="nightBtn" aria-label="Tukar mod gelap" aria-pressed="false"><span data-icon="moon"></span><span id="nightLabel">Gelap</span></button>
-    <span id="activityStatus" class="activity-status">Kedai dibuka dengan senyuman</span>
+    <span id="activityStatus" class="activity-status" hidden aria-live="off"></span>
+
   </nav>
-  <div class="operations-bar"><span id="storeClock">08:00</span><span id="storeStars" aria-label="Bintang servis">★ ★ ★</span><button id="operationsBtn">Bekalan kedai</button><span id="supplyStatus">Resit 12</span></div>
+  <div class="operations-bar"><div class="ops-status"><span id="storeClock">08:00</span><span id="storeStars" aria-label="Bintang servis">★ ★ ★</span></div><div class="ops-actions"><button id="operationsBtn">Bekalan</button><span id="supplyStatus">Resit 12</span><div id="mobileControlsSlot" class="mobile-controls-slot" aria-label="Kawalan permainan"><button id="mobileControlsToggle" type="button" class="mobile-controls-toggle" aria-controls="gameTools" aria-expanded="false"><span data-icon="settings"></span><b>Kawalan</b><span class="mobile-chevron" aria-hidden="true">▾</span></button></div></div></div>
   <div class="mobile-tabs" role="tablist" aria-label="Paparan kaunter"><button id="counterTab" class="mobile-tab active" role="tab" aria-selected="true">Kaunter <span data-icon="scan"></span></button><button id="paymentTab" class="mobile-tab" role="tab" aria-selected="false">Resit & bayaran <b id="mobileCount">0</b></button></div>
   <main class="game-grid">
     <section class="work-area" aria-label="Kaunter juruwang">
@@ -70,9 +71,58 @@
 </section>
 <section id="floatingCalculator" class="floating-calculator" role="dialog" aria-modal="false" aria-label="Kalkulator terapung" hidden></section>
 <dialog id="modal"><div id="modalContent"></div></dialog>
+<dialog id="accountOverlay" class="account-overlay" aria-labelledby="accountTitle" aria-modal="true">
+  <div class="account-panel">
+    <div class="account-logo">✦ <b>Kedai<span>Kita.</span></b> <small>SIMPAN PROGRES</small></div>
+    <h2 id="accountTitle">Selamat kembali!</h2>
+    <p id="accountHint">Daftar atau log masuk untuk simpan progres permainan.</p>
+    <p id="accountMessage" class="account-message" role="status" aria-live="polite"></p>
+    <div id="accountAuthFields">
+      <div class="account-tabs"><button type="button" id="accountLoginTab" class="active">Log masuk</button><button type="button" id="accountRegisterTab">Daftar akaun</button></div>
+      <form id="accountForm" class="account-form">
+        <label for="accountEmail">E-mel</label><input id="accountEmail" type="email" placeholder="nama@email.com" autocomplete="email" required>
+        <label for="accountPassword">Kata laluan</label><input id="accountPassword" type="password" placeholder="Sekurang-kurangnya 6 aksara" autocomplete="current-password" minlength="6" required>
+        <button type="submit" id="accountSubmit" class="primary-btn">Log masuk</button>
+      </form>
+      <button type="button" id="accountReset" class="account-text-button">Lupa kata laluan?</button>
+    </div>
+    <div id="accountChoice" hidden>
+      <div class="account-choice-label">Progres lama ditemui pada peranti ini</div>
+      <button type="button" id="accountImport" class="primary-btn">Import progres lama ke akaun</button>
+      <button type="button" id="accountFresh" class="account-secondary">Mula permainan baharu</button>
+    </div>
+    <div id="accountOverview" hidden>
+      <div class="account-current"><span>✦</span><div><small>AKAUN AKTIF</small><strong id="accountCurrent"></strong></div></div>
+      <p class="account-sync-small" id="accountSyncLabel">Simpanan akaun tersedia</p>
+    </div>
+    <div class="account-actions" id="accountControls">
+      <button type="button" id="accountGuest" class="account-secondary">Main sebagai tetamu (offline)</button>
+      <button type="button" id="accountRetry" class="account-secondary" hidden>Cuba sambung semula</button>
+      <button type="button" id="accountClose" class="primary-btn" hidden>Kembali ke game</button>
+      <button type="button" id="accountLogout" class="account-text-button" hidden>Log keluar</button>
+    </div>
+    <div class="account-fineprint">Setiap akaun mempunyai progres permainan masing-masing.</div>
+  </div>
+</dialog>
 <audio id="backgroundMusic" src="./gameplay-music.mp3" preload="metadata" loop></audio>
 <audio id="chaChingSound" src="./cha-ching.wav" preload="auto"></audio>
 <audio id="scannerSound" src="./scanner-beep.wav" preload="auto"></audio>
-<script type="module" src="app.mjs?v=audio-fix-1"></script>
+<script src="firebase-config.js"></script>
+<script type="module">
+// Versioned loader: the currently published version.json controls the actual CSS and app version.
+// Each release only requires updating version.json after publishing the changed files.
+const fallbackBuild = 'pos55';
+let activeBuild = fallbackBuild;
+try {
+  const response = await fetch('./version.json?init=' + Date.now(), {cache:'no-store'});
+  if (response.ok) {
+    const data = await response.json();
+    if (typeof data.version === 'string' && /^[a-zA-Z0-9._-]{1,100}$/.test(data.version)) activeBuild=data.version;
+  }
+} catch { /* offline: open the bundled fallback version */ }
+window.__KEDAI_ACTIVE_VERSION__=activeBuild;
+document.getElementById('gameStyles').href='./style.css?v='+encodeURIComponent(activeBuild);
+await import('./app.mjs?v='+encodeURIComponent(activeBuild));
+</script>
 <audio id="scaleSound" src="./scale-place.mp3" preload="auto"></audio>
 </body></html>
