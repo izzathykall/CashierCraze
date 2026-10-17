@@ -626,9 +626,34 @@ export function ensureOperations(p){
  p.paper=Number.isInteger(p.paper)?Math.max(0,p.paper):12;p.cardHealth=Number.isFinite(p.cardHealth)?Math.max(0,Math.min(100,p.cardHealth)):100;p.cardBroken=!!p.cardBroken||p.cardHealth===0;
  p.supplierDebt=Math.max(0,Math.round(Number(p.supplierDebt)||0));p.sales=Array.isArray(p.sales)?p.sales.slice(-120):[];p.saleSequence=Math.max(0,Math.floor(p.saleSequence||0));return fresh;
 }
-export function stockQuote(p,id=null){ensureOperations(p);const lines=availableProducts(p.unlocked).filter(x=>!id||x.id===id).map(x=>({id:x.id,name:x.name,weighted:!!x.weighted,quantity:Math.max(0,stockTarget(x)-p.inventory[x.id])})).filter(x=>x.quantity>0);for(const x of lines)x.cost=stockCost(PRODUCTS.find(i=>i.id===x.id),x.quantity);return {lines,total:lines.reduce((sum,x)=>sum+x.cost,0)}}
+// Units for wrapped items and kilograms for weighed items. One purchase is capped
+// at 20 units/kg per product; existing stock may be higher after multiple purchases.
+export const MAX_STOCK_PURCHASE=20, LOW_STOCK_UNITS=5;
+export function stockQuote(p,id=null,units=null){
+ ensureOperations(p);
+ const manual=units!==null;
+ if(manual&&(!id||!Number.isInteger(units)||units<1||units>MAX_STOCK_PURCHASE))return {lines:[],total:0,manual:true};
+ const lines=availableProducts(p.unlocked).filter(x=>!id||x.id===id).map(x=>{
+  const quantity=manual?units*(x.weighted?1000:1):Math.max(0,stockTarget(x)-p.inventory[x.id]);
+  return {id:x.id,name:x.name,weighted:!!x.weighted,quantity,cost:quantity?stockCost(x,quantity):0};
+ }).filter(x=>x.quantity>0);
+ return {lines,total:lines.reduce((sum,x)=>sum+x.cost,0),manual};
+}
 export function payStoreCost(p,cost,credit=false){if(!Number.isInteger(cost)||cost<0||(!credit&&p.wallet<cost))return false;const paid=Math.min(Math.max(0,p.wallet),cost);p.wallet-=paid;p.supplierDebt+=cost-paid;return true}
-export function buyStock(p,quote,credit=false){const fresh=stockQuote(p);if(!quote?.lines?.length)return false;for(const line of quote.lines){const current=fresh.lines.find(x=>x.id===line.id);if(!current||current.quantity!==line.quantity||current.cost!==line.cost)return false}if(quote.total!==quote.lines.reduce((n,x)=>n+x.cost,0)||!payStoreCost(p,quote.total,credit))return false;for(const line of quote.lines)p.inventory[line.id]+=line.quantity;return true}
+export function buyStock(p,quote,credit=false){
+ ensureOperations(p);
+ if(!quote||!Array.isArray(quote.lines)||!quote.lines.length||!Number.isInteger(quote.total)||quote.total<=0)return false;
+ // Recalculate the amounts using trusted catalogue prices. Do not allow a
+ // modified quantity, duplicated product, or stale automatic restock quote.
+ const expected=quote.manual
+  ?(quote.lines.length===1?stockQuote(p,quote.lines[0].id,quote.lines[0].quantity/(quote.lines[0].weighted?1000:1)):null)
+  :stockQuote(p);
+ if(!expected||expected.lines.length!==quote.lines.length||expected.total!==quote.total)return false;
+ if(!quote.lines.every(line=>expected.lines.some(x=>x.id===line.id&&x.weighted===line.weighted&&x.quantity===line.quantity&&x.cost===line.cost)))return false;
+ if(!payStoreCost(p,expected.total,credit))return false;
+ for(const line of expected.lines)p.inventory[line.id]+=line.quantity;
+ return true;
+}
 export function stockForBasket(p,items){const needed={};for(const x of items)needed[x.id]=(needed[x.id]||0)+stockUnits(x);return Object.entries(needed).every(([id,n])=>(p.inventory[id]||0)>=n)}
 export function takeStock(p,items){if(!stockForBasket(p,items))return false;for(const x of items)p.inventory[x.id]-=stockUnits(x);return true}
 export function receiveStoreCash(p,cents){const repayment=Math.min(p.supplierDebt||0,Math.max(0,Math.floor(cents*.3)));p.supplierDebt-=repayment;p.wallet+=cents-repayment;return repayment}

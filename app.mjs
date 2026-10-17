@@ -1,4 +1,4 @@
-import {PRODUCTS,PEOPLE,UPGRADES,DENOMS,money,itemPrice,basketTotal,amountDue,dayTarget,createProgress,restoreProgress,makeCustomer,tipFor,buyUpgrade,netTotal,applyCoupon,dailyMissions,claimMission,calculateExpression,CATEGORIES,availableProducts,unlockCategory,randomManualCode,dayFinished,changeParts,machineTimings,availablePaymentMethods,tenderFor,ensureOperations,stockQuote,buyStock,stockForBasket,takeStock,stockUnits,stockTarget,stockCost,payStoreCost,receiveStoreCash,ensureShift,loseStar,settleShift,arrivalWait,clockText,customerLine,PAPER_PACK,PAPER_COST,CARD_REPAIR_COST,cardRepairCost,returnPolicy,returnMatches} from './engine.mjs';
+import {PRODUCTS,PEOPLE,UPGRADES,DENOMS,money,itemPrice,basketTotal,amountDue,dayTarget,createProgress,restoreProgress,makeCustomer,tipFor,buyUpgrade,netTotal,applyCoupon,dailyMissions,claimMission,calculateExpression,CATEGORIES,availableProducts,unlockCategory,randomManualCode,dayFinished,changeParts,machineTimings,availablePaymentMethods,tenderFor,ensureOperations,stockQuote,buyStock,MAX_STOCK_PURCHASE,LOW_STOCK_UNITS,stockForBasket,takeStock,stockUnits,stockTarget,stockCost,payStoreCost,receiveStoreCash,ensureShift,loseStar,settleShift,arrivalWait,clockText,customerLine,PAPER_PACK,PAPER_COST,CARD_REPAIR_COST,cardRepairCost,returnPolicy,returnMatches} from './engine.mjs';
 import {productArt,moneyArt} from './art.mjs';
 import {createCloudSync} from './cloud.mjs?v=2026-10-17-pos-v5-3';
 
@@ -67,7 +67,10 @@ function newCustomer(){
  const selected=makeCustomer(mode==='practice'?Math.max(2,progress.day):progress.day,session.index,Math.random,{seen:session.seenPeople,paymentMethods:availablePaymentMethods(progress.upgrades,mode==='practice'),unlocked:mode==='practice'?CATEGORIES.map(c=>c.id):progress.unlocked,stock:mode==='practice'?null:progress.inventory});
  if(!selected){session.practiceDay=(session.practiceDay||1)+1;session.seenPeople=[];toast('Syif latihan baharu bermula.');newCustomer();return}
  customer=selected;prepareReturnCustomer();session.seenPeople.push(customer.person.id);customer.patience+=(progress.upgrades.comfort||0)*15;
- $('customerArt').className='customer arrive';setTimeout(()=>$('customerArt').classList.remove('arrive'),650);setMobileView('counter');resetStations();render();save();
+ $('customerArt').className='customer arrive';
+ const incomingCustomer=customer;
+ setTimeout(()=>{if(customer===incomingCustomer){$('customerArt').classList.remove('arrive');requestAnimationFrame(positionCustomerDialogue)}},650);
+ setMobileView('counter');resetStations();render();save();
 }
 function resetStations(){$('scaleItem').innerHTML='';$('scaleItem').dataset.uid='';setScaleReading(null);$('scaleState').textContent='SEDIA';$('scaleZone').classList.remove('stable');$('weightProgress').style.width='0';$('scaleCaption').textContent='Hasil segar · '+(machineTimings(progress.upgrades).weighMs/1000)+' saat';$('scaleZone').classList.remove('weighing','highlight');$('scannerZone').classList.remove('scanning','highlight');$('scannerStatus').textContent='Sedia untuk scan'}
 function render(){refreshCalculatorPresets();renderHeader();renderScene();renderProducts();renderReceipt();renderPayment();icons();renderPatience();renderActivity()}
@@ -524,14 +527,34 @@ function renderWaiting(){
 function showInventory(returnTo='game'){
  if(!session||modalKind==='intro')return;const store=operatingStore(),quote=stockQuote(store),destination=returnTo==='summary'||modalKind==='summary'?'summary':'game';
  const back=()=>{if(destination==='summary'){showSummary();return}closeModal();if(phase==='supply'&&readyForCustomer())newCustomer()};
- openModal('inventory',`<div class="modal-pad inventory-panel"><div class="modal-heading"><div><div class="modal-kicker">STOK & PENYELENGGARAAN</div><h2>Inventori kedai.</h2></div><button class="icon-btn" id="closeInventory" aria-label="Tutup">${icon('close')}</button></div><div class="inventory-money"><span>Duit kedai <b>${money(store.wallet)}</b></span><span>Hutang pembekal <b>${money(store.supplierDebt)}</b></span></div><p class="muted">Sasaran: 8 unit setiap barang berbungkus, 8 kg hasil segar. Stok berkurang selepas jualan berjaya. Harga borong ialah 82% harga jualan.</p><button class="primary-btn" id="restockAll" ${!quote.lines.length||mode==='practice'?'disabled':''}>Tambah semua stok · ${money(quote.total)}</button><p class="inventory-credit">Jika duit tidak cukup, anda boleh sahkan pembelian secara hutang. 30% kutipan jualan seterusnya digunakan untuk membayarnya.</p><div class="supply-cards"><div><b>Kertas resit</b><strong>${store.paper} helai</strong><small>Satu helai bagi setiap jualan atau pulangan.</small><button class="secondary-btn" id="buyPaper">Beli ${PAPER_PACK} helai · ${money(PAPER_COST)}</button></div><div><b>Terminal kad</b><strong>${store.cardBroken?'Rosak':store.cardHealth+'% keadaan'}</strong><small>Rosak selepas haus atau gangguan rawak. Bayaran kad disekat sehingga dibaiki.</small><button class="secondary-btn" id="repairTerminal" ${!cardRepairCost(store)?'disabled':''}>Baiki · ${money(cardRepairCost(operatingStore()))}</button></div></div><div class="inventory-toolbar"><input id="inventorySearch" type="search" placeholder="Cari nama barang…" aria-label="Cari inventori"><label><input type="checkbox" id="lowStockOnly"> Stok rendah sahaja</label><button class="secondary-btn" id="foldStock">Lipat semua</button></div><div class="inventory-list" id="inventoryGroups">${inventoryGroupsHTML(store)}</div><button class="secondary-btn" id="backInventory">${destination==='summary'?'Kembali ke laporan':'Kembali ke kaunter'}</button></div>`);
+ openModal('inventory',`<div class="modal-pad inventory-panel"><div class="modal-heading"><div><div class="modal-kicker">STOK & PENYELENGGARAAN</div><h2>Inventori kedai.</h2></div><button class="icon-btn" id="closeInventory" aria-label="Tutup">${icon('close')}</button></div><div class="inventory-money"><span>Duit kedai <b>${money(store.wallet)}</b></span><span>Hutang pembekal <b>${money(store.supplierDebt)}</b></span></div><p class="muted">Pilih sendiri 1 hingga 20 unit untuk setiap pembelian (barang timbang dalam kg). Stok rendah apabila baki kurang 5 unit/kg; stok habis apabila kosong. Harga borong 82% harga jualan.</p><button class="primary-btn" id="restockAll" ${!quote.lines.length||mode==='practice'?'disabled':''}>Tambah semua stok · ${money(quote.total)}</button><p class="inventory-credit">Jika duit tidak cukup, anda boleh sahkan pembelian secara hutang. 30% kutipan jualan seterusnya digunakan untuk membayarnya.</p><div class="supply-cards"><div><b>Kertas resit</b><strong>${store.paper} helai</strong><small>Satu helai bagi setiap jualan atau pulangan.</small><button class="secondary-btn" id="buyPaper">Beli ${PAPER_PACK} helai · ${money(PAPER_COST)}</button></div><div><b>Terminal kad</b><strong>${store.cardBroken?'Rosak':store.cardHealth+'% keadaan'}</strong><small>Rosak selepas haus atau gangguan rawak. Bayaran kad disekat sehingga dibaiki.</small><button class="secondary-btn" id="repairTerminal" ${!cardRepairCost(store)?'disabled':''}>Baiki · ${money(cardRepairCost(operatingStore()))}</button></div></div><div class="inventory-toolbar"><input id="inventorySearch" type="search" placeholder="Cari nama barang…" aria-label="Cari inventori"><label><input type="checkbox" id="lowStockOnly"> Stok rendah sahaja</label><button class="secondary-btn" id="foldStock">Lipat semua</button></div><div class="inventory-list" id="inventoryGroups">${inventoryGroupsHTML(store)}</div><button class="secondary-btn" id="backInventory">${destination==='summary'?'Kembali ke laporan':'Kembali ke kaunter'}</button></div>`);
  $('inventorySearch').oninput=filterInventory;$('lowStockOnly').onchange=filterInventory;$('foldStock').onclick=()=>{$('modalContent').querySelectorAll('[data-stock-category]').forEach(el=>el.open=false)};
  $('closeInventory').onclick=back;$('backInventory').onclick=back;
  $('restockAll').onclick=()=>confirmSupply('stock',null,destination);$('buyPaper').onclick=()=>confirmSupply('paper',null,destination);$('repairTerminal').onclick=()=>confirmSupply('repair',null,destination);
- $('modalContent').querySelectorAll('[data-restock]').forEach(b=>b.onclick=()=>confirmSupply('stock',b.dataset.restock,destination));
+ $('modalContent').querySelectorAll('[data-restock]').forEach(b=>b.onclick=()=>{
+   const input=$('modalContent').querySelector(`[data-stock-qty="${b.dataset.restock}"]`);
+   const amount=Number(input?.value);
+   if(!Number.isInteger(amount)||amount<1||amount>MAX_STOCK_PURCHASE){toast('Pilih kuantiti 1–20 sahaja.',true);return}
+   confirmSupply('stock',b.dataset.restock,destination,amount);
+ });
+ $('modalContent').querySelectorAll('[data-stock-qty]').forEach(input=>{
+   const card=input.closest('.stock-card'),minus=card.querySelector('[data-stock-minus]'),plus=card.querySelector('[data-stock-plus]'),buy=card.querySelector('[data-restock]');
+   const update=()=>{
+     const amount=Number(input.value),valid=Number.isInteger(amount)&&amount>=1&&amount<=MAX_STOCK_PURCHASE;
+     minus.disabled=!valid||amount<=1;plus.disabled=!valid||amount>=MAX_STOCK_PURCHASE;
+     buy.disabled=mode==='practice'||!valid;
+     const product=PRODUCTS.find(x=>x.id===input.dataset.stockQty);
+     buy.textContent=valid?'Beli '+amount+(product.weighted?' kg':' unit')+' · '+money(stockCost(product,amount*(product.weighted?1000:1))):'Masukkan 1–20';
+   };
+   minus.onclick=()=>{input.value=Math.max(1,Number(input.value||1)-1);update()};
+   plus.onclick=()=>{input.value=Math.min(MAX_STOCK_PURCHASE,Number(input.value||0)+1);update()};
+   input.oninput=update;
+   input.onchange=()=>{input.value=String(Math.max(1,Math.min(MAX_STOCK_PURCHASE,Math.trunc(Number(input.value)||1))));update()};
+   update();
+ });
 }
-function confirmSupply(type,id=null,destination='game'){
- const store=operatingStore(),quote=type==='stock'?stockQuote(store,id):null,cost=quote?quote.total:type==='paper'?PAPER_COST:cardRepairCost(store);
+function confirmSupply(type,id=null,destination='game',units=null){
+ const store=operatingStore(),quote=type==='stock'?stockQuote(store,id,units):null,cost=quote?quote.total:type==='paper'?PAPER_COST:cardRepairCost(store);
  if(!cost||(type==='repair'&&!cardRepairCost(store)))return;const credit=store.wallet<cost,shortfall=Math.max(0,cost-store.wallet);
  const description=type==='stock'?quote.lines.map(x=>`${x.name}: +${x.weighted?(x.quantity/1000).toFixed(2)+' kg':x.quantity+' unit'}`).join('<br>'):type==='paper'?`${PAPER_PACK} helai kertas resit`:'Pembaikan terminal kad sehingga 100%';
  openModal('supply-confirm',`<div class="modal-pad supply-confirm"><div class="modal-kicker">SEMAK SEBELUM MEMBELI</div><h2>Sahkan ${type==='stock'?'tambah stok':type==='paper'?'kertas resit':'pembaikan'}?</h2><div class="supply-confirm-lines">${description}</div><div class="supply-confirm-total"><span>Jumlah kos</span><strong>${money(cost)}</strong></div><p>${credit?'Duit tidak cukup. '+money(Math.max(0,store.wallet))+' dibayar sekarang dan '+money(shortfall)+' ditambah kepada hutang pembekal.':'Kos ini akan ditolak daripada duit kedai.'}</p><button class="primary-btn" id="confirmSupply">${credit?'Sahkan pembelian + hutang':'Sahkan pembelian'} · ${money(cost)}</button><button class="secondary-btn" id="cancelSupply">Batal</button></div>`);
@@ -661,7 +684,23 @@ function previewEffect(id){if(id==='scale')playScaleSound();else if(id==='chachi
 function effectSettingsHTML(){return `<details class="effect-mixer"><summary>Volume setiap bunyi</summary><p>Volume utama × volume bunyi. 0% untuk senyapkan satu bunyi sahaja.</p><div>${effectChoices().map(([id,label])=>`<div class="effect-channel"><label for="effect-${id}">${label} <b id="effect-label-${id}">${Math.round(effectLevel(id)*100)}%</b></label><input type="range" min="0" max="100" step="5" id="effect-${id}" data-effect="${id}" value="${Math.round(effectLevel(id)*100)}"><button class="secondary-btn" data-preview-effect="${id}" aria-label="Cuba bunyi ${label}">${icon('play')}</button></div>`).join('')}</div></details>`}
 function bindEffectSettings(){$('modalContent').querySelectorAll('[data-effect]').forEach(el=>el.oninput=()=>{progress.settings.effects??={};progress.settings.effects[el.dataset.effect]=Number(el.value)/100;$('effect-label-'+el.dataset.effect).textContent=el.value+'%';refreshEffectLevels();save()});$('modalContent').querySelectorAll('[data-preview-effect]').forEach(el=>el.onclick=()=>previewEffect(el.dataset.previewEffect))}
 
-function inventoryGroupsHTML(store){return CATEGORIES.filter(c=>store.unlocked.includes(c.id)).map(c=>{const list=PRODUCTS.filter(p=>p.category===c.id),low=list.filter(p=>store.inventory[p.id]<stockTarget(p)/4).length;return `<details class="stock-category" data-stock-category="${c.id}" open><summary><span>${c.name}</span><small>${list.length} barang${low?' · '+low+' stok rendah':''}</small></summary><div class="stock-grid">${list.map(p=>{const count=store.inventory[p.id],q=stockQuote(store,p.id),low=count<stockTarget(p)/4;return `<article class="stock-card ${low?'low-stock':''}" data-stock-name="${p.name.toLowerCase()}" data-low="${low}">${productArt(p.id)}<div><b>${p.name}</b><span>${p.weighted?(count/1000).toFixed(2)+' kg':count+' unit'} <small>/ ${p.weighted?'8 kg':'8 unit'}</small></span><small>Jual ${money(p.price)}${p.weighted?'/kg':''} · Borong ${money(stockCost(p,p.weighted?1000:1))}</small></div><meter min="0" max="8" value="${p.weighted?count/1000:count}" aria-label="Stok ${p.name}"></meter><button class="secondary-btn" data-restock="${p.id}" ${!q.total||mode==='practice'?'disabled':''}>${q.total?'Isi stok · '+money(q.total):'Stok penuh'}</button></article>`}).join('')}</div></details>`}).join('')}
+function inventoryGroupsHTML(store){
+ const all=PRODUCTS.filter(p=>store.unlocked.includes(p.category));
+ const isLow=p=>store.inventory[p.id]<(p.weighted?LOW_STOCK_UNITS*1000:LOW_STOCK_UNITS);
+ return CATEGORIES.filter(c=>store.unlocked.includes(c.id)).map(c=>{
+  const list=all.filter(p=>p.category===c.id),low=list.filter(isLow).length;
+  return `<details class="stock-category" data-stock-category="${c.id}" open><summary><span>${c.name}</span><small>${list.length} barang${low?' · '+low+' stok rendah/habis':''}</small></summary><div class="stock-grid">${list.map(p=>{
+   const count=store.inventory[p.id],weighted=!!p.weighted,multiplier=weighted?1000:1;
+   const lowStock=isLow(p),empty=count<=0;
+   const toTarget=Math.max(0,stockTarget(p)-count);
+   const units=Math.min(MAX_STOCK_PURCHASE,Math.max(1,Math.ceil(toTarget/multiplier)));
+   const unitLabel=weighted?'kg':'unit';
+   const badge=empty?'<small class="stock-level empty">Stok habis</small>':lowStock?'<small class="stock-level low">Stok rendah</small>':'<small class="stock-level good">Stok mencukupi</small>';
+   return `<article class="stock-card ${lowStock?'low-stock':''}" data-stock-name="${p.name.toLowerCase()}" data-low="${lowStock}">${productArt(p.id)}<div><b>${p.name}</b><span>${weighted?(count/1000).toFixed(2)+' kg':count+' unit'} ${badge}</span><small>Jual ${money(p.price)}${weighted?'/kg':''} · Borong ${money(stockCost(p,multiplier))}/${unitLabel}</small></div><meter min="0" max="20" value="${Math.min(20,count/multiplier)}" aria-label="Stok ${p.name}"></meter><div class="stock-buy-picker"><span>Kuantiti beli (${unitLabel})</span><div class="stock-qty-controls"><button type="button" data-stock-minus="${p.id}" aria-label="Kurangkan kuantiti ${p.name}">−</button><input data-stock-qty="${p.id}" inputmode="numeric" type="number" min="1" max="${MAX_STOCK_PURCHASE}" step="1" value="${units}" aria-label="Kuantiti untuk ${p.name}"><button type="button" data-stock-plus="${p.id}" aria-label="Tambah kuantiti ${p.name}">+</button></div></div><button type="button" class="secondary-btn stock-buy-action" data-restock="${p.id}" ${mode==='practice'?'disabled':''}>Beli ${units} ${unitLabel} · ${money(stockCost(p,units*multiplier))}</button></article>`;
+  }).join('')}</div></details>`;
+ }).join('');
+}
+
 function filterInventory(){const term=$('inventorySearch').value.toLowerCase().trim(),low=$('lowStockOnly').checked;const cards=$('modalContent').querySelectorAll('[data-stock-name]');cards.forEach(el=>el.hidden=!el.dataset.stockName.includes(term)||(low&&el.dataset.low!=='true'));$('modalContent').querySelectorAll('[data-stock-category]').forEach(group=>{group.hidden=![...group.querySelectorAll('[data-stock-name]')].some(el=>!el.hidden);if(term||low)group.open=true})}
 
 function renderReturnReceipt(){ensureReturnClaim();const item=customer.items[0],claim=customer.returnClaim,total=item.scanned?(claim?.paid||0):0;$('roundingRow')?.remove();$('discountRow')?.remove();$('receiptQuantity').textContent='('+Number(!!item.scanned)+' barang)';$('receiptNo').textContent=claim?.receipt||'PULANGAN';$('receiptSub').textContent='Amaun dituntut · belum disahkan';$('subtotal').textContent=money(total);$('total').textContent=money(total);$('receiptList').innerHTML=item.scanned?`<div class="receipt-row"><span class="row-emoji">${productArt(item.id)}</span><span class="row-info"><b>${item.name}</b><small>Pemulangan · 1 unit</small></span><strong>${money(total)}</strong></div>`:`<div class="receipt-empty">${icon('undo')}<b>Barang pemulangan belum discan</b><small>Tekan barang di conveyor untuk semak.</small></div>`}
@@ -692,12 +731,33 @@ function bindBankCardDrag(){
  el.onkeydown=e=>{if(!allowed())return;const shifts={ArrowLeft:[-12,0],ArrowRight:[12,0],ArrowUp:[0,-12],ArrowDown:[0,12]};if(e.key==='Escape'){e.preventDefault();reset();return}if(e.key==='Enter'||e.key===' '){e.preventDefault();finish(keyPose);return}if(!shifts[e.key])return;e.preventDefault();const base=cardGeometry();base.c.left-=keyPose.x;base.c.right-=keyPose.x;base.c.top-=keyPose.y;base.c.bottom-=keyPose.y;keyPose=move(keyPose.x+shifts[e.key][0],keyPose.y+shifts[e.key][1],base)};
 }
 function positionCustomerDialogue(){
- const scene=document.querySelector('.store-scene'),art=$('customerArt'),bubble=$('speech'),info=$('customerInfo');if(!scene||!art||!bubble||!info)return;
- const s=scene.getBoundingClientRect(),a=art.getBoundingClientRect(),i=info.getBoundingClientRect();if(!s.width||!s.height)return;
- const left=Math.min(s.width-110,Math.max(8,a.left-s.left+a.width*.75+8)),width=Math.max(100,Math.min(250,s.width-left-12));
- bubble.style.left=left+'px';bubble.style.right='auto';bubble.style.width=width+'px';bubble.style.maxWidth=width+'px';bubble.style.bottom='auto';bubble.style.maxHeight=Math.max(28,i.top-s.top-30)+'px';
- const height=bubble.getBoundingClientRect().height,top=Math.max(22,Math.min(a.top-s.top+a.height*.45-height*.5,i.top-s.top-height-8));bubble.style.top=top+'px';
+ const scene=document.querySelector('.store-scene'),art=$('customerArt'),bubble=$('speech'),info=$('customerInfo');
+ if(!scene||!art||!bubble||!info||!customer)return;
+ const sceneBox=scene.getBoundingClientRect();if(!sceneBox.width||!sceneBox.height)return;
+ const compact=sceneBox.width<520,veryNarrow=sceneBox.width<390;
+ // The character is centered using translateX(-50%). offsetLeft is the
+ // stable untransformed center, unlike getBoundingClientRect during animation.
+ art.style.left=compact?'34%':'';
+ const center=art.offsetLeft,half=art.offsetWidth/2;
+ const charLeft=center-half,charRight=center+half;
+ const gap=compact?12:22,edge=compact?9:15;
+ const rightRoom=sceneBox.width-charRight-gap-edge,leftRoom=charLeft-gap-edge;
+ const onRight=rightRoom>=112||rightRoom>=leftRoom;
+ const free=Math.max(1,onRight?rightRoom:leftRoom);
+ const width=Math.max(1,Math.min(compact?(veryNarrow?148:185):240,free));
+ const left=onRight?charRight+gap:charLeft-gap-width;
+ bubble.classList.toggle('speech-left',!onRight);
+ bubble.style.left=Math.round(Math.max(edge,left))+'px';bubble.style.right='auto';
+ bubble.style.width=Math.floor(width)+'px';bubble.style.maxWidth=Math.floor(width)+'px';bubble.style.minWidth='0';
+ bubble.style.bottom='auto';bubble.style.transform='none';
+ const infoTop=info.getBoundingClientRect().top-sceneBox.top;
+ const safeSpace=Math.max(32,infoTop-26);
+ bubble.style.maxHeight=safeSpace+'px';
+ const height=bubble.getBoundingClientRect().height;
+ const target=art.offsetTop+Math.round(art.offsetHeight*.14);
+ bubble.style.top=Math.round(Math.max(10,Math.min(target,infoTop-height-12)))+'px';
 }
+
 window.addEventListener('resize',()=>{cancelBankCardDrag();if(customer?.method==='card'&&['pin','processing','contact'].includes(customer.cardStage))setCardPose(true);if(!$('floatingCalculator')?.hidden&&calculatorPosition)positionCalculator(calculatorPosition.x,calculatorPosition.y);requestAnimationFrame(positionCustomerDialogue)});
 window.visualViewport?.addEventListener('resize',()=>{if(!$('floatingCalculator')?.hidden&&calculatorPosition)positionCalculator(calculatorPosition.x,calculatorPosition.y)});
 document.addEventListener('fullscreenchange',()=>requestAnimationFrame(positionCustomerDialogue));

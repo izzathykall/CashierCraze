@@ -722,3 +722,26 @@ body[data-theme="dark"] .store-scene .speech::after{background:#263e33}
   .modern-card-scene .terminal-v2-keys button {font-size:12px;}
   .modern-card-scene .payment-bankcard b {font-size:8px !important;letter-spacing:.7px !important;}
 }
+
+
+/* Inventory purchase selector: 1–20 units per purchase. */
+.stock-card .stock-buy-picker{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin:3px 0 0;padding-top:8px;border-top:1px solid var(--line)}
+.stock-buy-picker>span{font-size:10px;font-weight:700;color:var(--muted)}
+.stock-qty-controls{display:flex;align-items:center;gap:4px;padding:3px;border:1px solid var(--line);border-radius:12px;background:var(--mint)}
+.stock-qty-controls button{width:31px;height:32px;min-height:32px;display:grid;place-items:center;border:1px solid var(--line);border-radius:9px;background:var(--white);font-size:20px;font-weight:700;color:var(--green);padding:0}
+.stock-qty-controls button:disabled{opacity:.35;cursor:not-allowed}
+.stock-qty-controls input{width:44px;min-width:44px;height:34px;padding:2px;border:0;outline-offset:2px;background:transparent;color:var(--ink);text-align:center;font:700 16px var(--display);font-variant-numeric:tabular-nums}
+.stock-qty-controls input::-webkit-outer-spin-button,.stock-qty-controls input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.stock-qty-controls input[type=number]{appearance:textfield;-moz-appearance:textfield}
+.stock-card .stock-buy-action{grid-column:1/-1;margin-top:3px;font-size:11px;min-height:40px}
+.stock-card .stock-level{display:inline-block!important;width:max-content;max-width:100%;font-size:9px;line-height:1.3;font-weight:800;margin-top:3px;padding:2px 6px;border-radius:6px}
+.stock-level.low{color:#995b28;background:#fbecd0}.stock-level.empty{color:#a84944;background:#f9dcd8}.stock-level.good{color:#4a7655;background:#e4efdf}
+body[data-theme=dark] .stock-qty-controls{background:#294332}
+body[data-theme=dark] .stock-level.low{background:#64532e;color:#ffda92}
+body[data-theme=dark] .stock-level.empty{background:#653c3c;color:#ffd9d4}
+body[data-theme=dark] .stock-level.good{background:#34533b;color:#d6eccb}
+/* Bubble never covers customer art; narrow screens reserve space on the right. */
+.store-scene .speech{box-sizing:border-box!important;min-width:0!important;overflow-wrap:anywhere;transform:none!important;box-shadow:0 7px 18px #264b3a22,0 2px 0 #9bb8a426}
+@media(max-width:520px){.store-scene .speech{font-size:clamp(9px,2.5vw,11px)!important;line-height:1.45!important;padding:9px 11px!important;border-radius:12px!important}}
+@media(max-width:390px){.store-scene .speech{font-size:9px!important;padding:8px 9px!important}}
+@media(max-width:700px){.stock-card .stock-buy-picker{gap:5px}.stock-buy-picker>span{font-size:9px}.stock-qty-controls button{width:29px;height:32px}}
