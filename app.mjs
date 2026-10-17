@@ -67,7 +67,7 @@ function newCustomer(){
  const selected=makeCustomer(mode==='practice'?Math.max(2,progress.day):progress.day,session.index,Math.random,{seen:session.seenPeople,paymentMethods:availablePaymentMethods(progress.upgrades,mode==='practice'),unlocked:mode==='practice'?CATEGORIES.map(c=>c.id):progress.unlocked,stock:mode==='practice'?null:progress.inventory});
  if(!selected){session.practiceDay=(session.practiceDay||1)+1;session.seenPeople=[];toast('Syif latihan baharu bermula.');newCustomer();return}
  customer=selected;prepareReturnCustomer();session.seenPeople.push(customer.person.id);customer.patience+=(progress.upgrades.comfort||0)*15;
- $('customerArt').className='customer arrive';const enteringCustomer=customer;setTimeout(()=>{if(customer===enteringCustomer){$('customerArt').classList.remove('arrive');requestAnimationFrame(positionCustomerDialogue)}},650);setMobileView('counter');resetStations();render();save();
+ $('customerArt').className='customer arrive';setTimeout(()=>$('customerArt').classList.remove('arrive'),650);setMobileView('counter');resetStations();render();save();
 }
 function resetStations(){$('scaleItem').innerHTML='';$('scaleItem').dataset.uid='';setScaleReading(null);$('scaleState').textContent='SEDIA';$('scaleZone').classList.remove('stable');$('weightProgress').style.width='0';$('scaleCaption').textContent='Hasil segar · '+(machineTimings(progress.upgrades).weighMs/1000)+' saat';$('scaleZone').classList.remove('weighing','highlight');$('scannerZone').classList.remove('scanning','highlight');$('scannerStatus').textContent='Sedia untuk scan'}
 function render(){refreshCalculatorPresets();renderHeader();renderScene();renderProducts();renderReceipt();renderPayment();icons();renderPatience();renderActivity()}
@@ -325,19 +325,20 @@ async function startDigital(confirmed=false){
  const card=customer.method==='card',store=operatingStore();
  if(card&&(!confirmed||!customer.cardContactReady))return;
  if(card&&(store.cardBroken||customer.cardFailure)){store.cardBroken=true;store.cardHealth=0;customer.cardFailure=false;save();renderHeader();renderPayment();beep('error');return}
- busy=true;const token=scanToken,transaction=customer;customer.cardStage=card?(customer.requiresPin?'inserting':'contact'):'processing';renderPayment();save();
- if(!await delayActive(card?420:1400,token))return;
+ busy=true;const token=scanToken,transaction=customer;customer.cardStage=card?'contact':'processing';renderPayment();save();
+ if(!await delayActive(card?520:1400,token))return;
  busy=false;beep('scan');
  if(card&&customer.requiresPin){customer.cardStage='pin';customer.pinInput='';renderPayment();save();return}
  completePayment(transaction);
 }
 function renderCardTerminal(){
- const stage=customer.cardStage||'ready',pin=stage==='pin',working=['inserting','contact','processing'].includes(stage),insert=customer.requiresPin;
- const action=insert?'Luncurkan kad ke kiri sehingga masuk ke slot':'Luncurkan kad ke simbol tanpa sentuh';
+ const stage=customer.cardStage||'ready',pin=stage==='pin',working=['contact','processing'].includes(stage);
+ const action='Seret kad ke terminal untuk membuat bayaran';
  const keys=['1','2','3','4','5','6','7','8','9','⌫','0','OK'];
+ const themes=['theme-green','theme-gold','theme-pink','theme-black'];
+ customer.cardTheme??=themes[Math.floor(Math.random()*themes.length)];
  const holder=(customer.person?.name||'Pelanggan').toUpperCase();
- const masked='4826  ••••  ••••  2026';
- $('paymentArea').innerHTML=`<div id="payDevice" class="payment-scene modern-card-scene ${insert?'insert-mode':'tap-mode'} stage-${stage}"><div class="terminal-v2"><div class="terminal-v2-brand">KITA PAY <i></i></div><div class="contact-reader" id="cardReaderTarget">${icon('volume')}<small>SENTUH DI SINI</small></div><div class="terminal-v2-screen"><small>${pin?'MASUKKAN PIN':working?'SEDANG MEMPROSES':'TERMINAL SEDIA'}</small><b>${pin?('●'.repeat(customer.pinInput.length)||'_ _ _ _'):money(amountDue(customer))}</b><span>${pin?'Tekan OK pada terminal':insert?'Luncurkan kad sehingga masuk ke slot cip':'Luncurkan kad ke pembaca tanpa sentuh'}</span></div><div class="terminal-v2-keys">${keys.map(k=>`<button type="button" data-terminal-pin="${k}" class="${k==='OK'?'pin-ok':k==='⌫'?'pin-clear':''}" ${pin?'':'disabled'} aria-label="${k==='⌫'?'Padam':k==='OK'?'Sahkan PIN':k}">${k}</button>`).join('')}</div><div class="chip-slot" id="cardSlotTarget"><small>SLOT CIP</small></div></div><button class="payment-bankcard" id="swipeCard" ${working||pin?'disabled':''} aria-label="${action}"><span class="bankcard-kicker">KITA DEBIT</span><span class="bankcard-brandmark" aria-hidden="true">kita pay</span><span class="bankcard-wave" aria-hidden="true">))))</span><div class="bankcard-chipline"><i class="card-chip"></i><span class="bankcard-type">DEBIT</span></div><span class="bankcard-number">${masked}</span><small class="bankcard-holder">${holder}</small><em>VALID THRU 12/26</em><i class="bankcard-orb orb-a" aria-hidden="true"></i><i class="bankcard-orb orb-b" aria-hidden="true"></i></button><span class="terminal-action-label">${pin?'Masukkan 4 digit PIN pada terminal':working?(insert?'Kad sedang masuk ke slot…':'Kad sedang dibaca…'):action}</span></div>${pin?`<div class="card-pin-guide ${customer.pinError?'has-error':''}"><small>PIN pelanggan</small><strong>${customer.cardPin}</strong><span id="pinError" class="code-error">${customer.pinError||''}</span></div>`:`<div class="card-drag-instruction">${working?(insert?'Kad sedang diproses. Tunggu seketika…':'Kad sedang dibaca. Tunggu seketika…'):action}</div>`}`;
+ $('paymentArea').innerHTML=`<div id="payDevice" class="payment-scene modern-card-scene stage-${stage}"><div class="terminal-v2"><div class="terminal-v2-top"></div><div class="terminal-v2-screen-frame"><div class="terminal-v2-screen"><small>${pin?'MASUKKAN PIN':working?'SEDANG MEMPROSES':'TERMINAL SEDIA'}</small><b>${pin?('●'.repeat(customer.pinInput.length)||'_ _ _ _'):money(amountDue(customer))}</b><span>${pin?'Masukkan 4 digit PIN dan tekan OK':working?'Sila tunggu pengesahan terminal':customer.requiresPin?'Seret kad ke terminal. Kemudian masukkan PIN':'Seret kad ke terminal tanpa sentuh'}</span></div></div><div class="terminal-v2-keys">${keys.map(k=>`<button type="button" data-terminal-pin="${k}" class="${k==='OK'?'pin-ok':k==='⌫'?'pin-clear':''}" ${pin?'':'disabled'} aria-label="${k==='⌫'?'Padam':k==='OK'?'Sahkan PIN':k}">${k}</button>`).join('')}</div><div class="contact-reader" id="cardReaderTarget"><small>${customer.requiresPin?'SERET KAD UNTUK BAYAR':'SENTUH / SERET KAD DI SINI'}</small></div></div><button class="payment-bankcard ${customer.cardTheme}" id="swipeCard" ${working||pin?'disabled':''} aria-label="${action}"><span class="bank-name">KITA BANK</span><span class="card-motif" aria-hidden="true"></span><i class="card-chip"></i><span class="card-wave" aria-hidden="true">))))</span><b>4826 2026 1234 5678</b><small>${holder}</small><em>12/26</em><strong class="card-brand">mc</strong></button><span class="terminal-action-label">${pin?'Masukkan 4 digit PIN pada terminal':working?'Kad sedang dibaca…':'Seret kad ke kawasan terminal untuk bayar'}</span></div>${pin?`<div class="card-pin-guide"><small>PIN pelanggan</small><strong>${customer.cardPin}</strong><span id="pinError" class="code-error">${customer.pinError||''}</span></div>`:`<div class="card-drag-instruction">${customer.requiresPin?'Seret kad ke terminal. Selepas itu masukkan PIN pelanggan.':'Seret kad ke terminal untuk lengkapkan pembayaran.'}</div>`}`;
  if(pin){setCardPose();$('paymentArea').querySelectorAll('[data-terminal-pin]').forEach(b=>b.onclick=()=>pressPin(b.dataset.terminalPin));return}
  if(working)setCardPose();else bindBankCardDrag();
 }
@@ -485,9 +486,9 @@ function syncPaymentSurface(){
   overlay.dataset.method=customer.method;overlay.dataset.kind=customer.kind;overlay.dataset.phase=phase;
   $('paymentTitle').textContent=customer.kind==='return'?'Pemulangan barang':customer.method==='cash'?(phase==='change'?'Laci baki tunai':'Terima bayaran tunai'):customer.method==='card'?'Pembayaran kad':'Pembayaran QR';
   $('paymentCustomer').textContent=customer.person.name+' · Jumlah '+money(amountDue(customer))+(customer.method==='cash'?(customer.kind==='return'?' · Bayaran balik':' · Diterima '+money(customer.tender)):'');
-  $('paymentInstructions').textContent=customer.kind==='return'?'Bandingkan data resit dengan rekod sistem. Terima hanya pemulangan yang sah.':customer.method==='cash'?'Pilih dari laci · tekan duit dalam dulang untuk masukkan semula':customer.method==='card'?'Luncurkan kad pada terminal. Jika perlu, masukkan PIN terus pada mesin.':'Ambil scanner dan imbas kod pada telefon pelanggan';
+  $('paymentInstructions').textContent=customer.kind==='return'?'Bandingkan data resit dengan rekod sistem. Terima hanya pemulangan yang sah.':customer.method==='cash'?'Pilih dari laci · tekan duit dalam dulang untuk masukkan semula':customer.method==='card'?'Seret kad ke terminal. Jika diminta, masukkan PIN pada mesin' :'Ambil scanner dan imbas kod pada telefon pelanggan';
  }
- if(opening)($('minimizePayment')||$('paymentOverlay')).focus?.({preventScroll:true});
+ if(opening)$('paymentTitle').focus?.({preventScroll:true});
  $('resumePayment').onclick=()=>{paymentMinimized=false;syncPaymentSurface()};
  $('minimizePayment').onclick=()=>{cancelBankCardDrag();paymentMinimized=true;syncPaymentSurface();$('resumePayment').focus?.()};
  $('paymentCalculator').onclick=showCalculator;$('paymentSettings').onclick=showSettings;$('paymentPause').onclick=showPause;
@@ -664,65 +665,39 @@ function filterInventory(){const term=$('inventorySearch').value.toLowerCase().t
 
 function renderReturnReceipt(){ensureReturnClaim();const item=customer.items[0],claim=customer.returnClaim,total=item.scanned?(claim?.paid||0):0;$('roundingRow')?.remove();$('discountRow')?.remove();$('receiptQuantity').textContent='('+Number(!!item.scanned)+' barang)';$('receiptNo').textContent=claim?.receipt||'PULANGAN';$('receiptSub').textContent='Amaun dituntut · belum disahkan';$('subtotal').textContent=money(total);$('total').textContent=money(total);$('receiptList').innerHTML=item.scanned?`<div class="receipt-row"><span class="row-emoji">${productArt(item.id)}</span><span class="row-info"><b>${item.name}</b><small>Pemulangan · 1 unit</small></span><strong>${money(total)}</strong></div>`:`<div class="receipt-empty">${icon('undo')}<b>Barang pemulangan belum discan</b><small>Tekan barang di conveyor untuk semak.</small></div>`}
 
-function cardGeometry(){const card=$('swipeCard'),scene=$('payDevice'),target=$(customer.requiresPin?'cardSlotTarget':'cardReaderTarget');if(!card||!scene||!target)return null;const plain=el=>{const b=el.getBoundingClientRect();return {left:b.left,top:b.top,right:b.right,bottom:b.bottom,width:b.width,height:b.height}};return {c:plain(card),t:plain(target),r:plain(scene)}}
-function cardDropAccepted(c,t,insert){
+function cardGeometry(){const card=$('swipeCard'),scene=$('payDevice'),target=$('cardReaderTarget');if(!card||!scene||!target)return null;const plain=el=>{const b=el.getBoundingClientRect();return {left:b.left,top:b.top,right:b.right,bottom:b.bottom,width:b.width,height:b.height}};return {c:plain(card),t:plain(target),r:plain(scene)}}
+function cardDropAccepted(c,t){
  const centerX=c.left+c.width/2,centerY=c.top+c.height/2,targetX=t.left+t.width/2,targetY=t.top+t.height/2;
- if(insert){const depth=(targetX-c.left)/c.width;return depth>=.25&&depth<=.95&&Math.abs(centerY-targetY)<=Math.max(28,t.height*.48)}
- return Math.abs(centerX-targetX)<=Math.max(30,t.width*.5)&&Math.abs(centerY-targetY)<=Math.max(25,t.height);
+ return Math.abs(centerX-targetX)<=Math.max(42,t.width*.56)&&Math.abs(centerY-targetY)<=Math.max(30,t.height*.7);
 }
-function setCardPose(realign=false){const el=$('swipeCard');if(!el)return;if(realign){customer.cardPose=null;el.style.setProperty('--card-x','0px');el.style.setProperty('--card-y','0px')}let pose=customer.cardPose;if(!pose&&customer.cardStage!=='ready'){const g=cardGeometry();if(g){const {c,t}=g;pose={x:t.left+t.width/2-c.left-c.width*(customer.requiresPin ? .78 : .5),y:t.top+t.height/2-c.top-c.height/2};customer.cardPose=pose}}if(pose){el.style.setProperty('--card-x',pose.x+'px');el.style.setProperty('--card-y',pose.y+'px')}}
+function setCardPose(realign=false){const el=$('swipeCard');if(!el)return;if(realign){customer.cardPose=null;el.style.setProperty('--card-x','0px');el.style.setProperty('--card-y','0px')}let pose=customer.cardPose;if(!pose&&customer.cardStage!=='ready'){const g=cardGeometry();if(g){const {c,t}=g;pose={x:t.left+t.width/2-c.left-c.width*.5,y:t.top+t.height/2-c.top-c.height/2};customer.cardPose=pose}}if(pose){el.style.setProperty('--card-x',pose.x+'px');el.style.setProperty('--card-y',pose.y+'px')}}
 function cancelBankCardDrag(){if(!bankCardDrag)return;bankCardDrag=null;const el=$('swipeCard');if(el){el.classList.remove('dragging');el.style.setProperty('--card-x','0px');el.style.setProperty('--card-y','0px')}if($('payDevice'))$('payDevice').classList.remove('card-in-range');}
 function bindBankCardDrag(){
  const el=$('swipeCard'),scene=$('payDevice'),transaction=customer;let keyPose={x:0,y:0};
  const allowed=()=>transaction===customer&&!paused&&!busy&&phase==='offer'&&customer.cardStage==='ready';
  const reset=()=>{cancelBankCardDrag();el.classList.remove('dragging');el.classList.add('returning');el.style.setProperty('--card-x','0px');el.style.setProperty('--card-y','0px');keyPose={x:0,y:0};scene.classList.remove('card-in-range');setTimeout(()=>el.classList.remove('returning'),200)};
- const move=(dx,dy,base)=>{const r=base.r,c=base.c;dx=Math.max(r.left+5-c.left,Math.min(r.right-5-c.right,dx));dy=Math.max(r.top+5-c.top,Math.min(r.bottom-25-c.bottom,dy));el.style.setProperty('--card-x',dx+'px');el.style.setProperty('--card-y',dy+'px');const translated={...c,left:c.left+dx,top:c.top+dy};const valid=cardDropAccepted(translated,base.t,customer.requiresPin);scene.classList.toggle('card-in-range',valid);return {x:dx,y:dy,valid}};
+ const move=(dx,dy,base)=>{const r=base.r,c=base.c;dx=Math.max(r.left+5-c.left,Math.min(r.right-5-c.right,dx));dy=Math.max(r.top+5-c.top,Math.min(r.bottom-25-c.bottom,dy));el.style.setProperty('--card-x',dx+'px');el.style.setProperty('--card-y',dy+'px');const translated={...c,left:c.left+dx,top:c.top+dy};const valid=cardDropAccepted(translated,base.t);scene.classList.toggle('card-in-range',valid);return {x:dx,y:dy,valid}};
  const finish=pose=>{el.classList.remove('dragging');bankCardDrag=null;
   if(!allowed()||!pose?.valid){reset();return}
   const g=cardGeometry();
-  if(g){const position=customer.requiresPin ? .78 : .5;customer.cardPose={x:g.t.left+g.t.width*.5-g.c.left-g.c.width*position,y:g.t.top+g.t.height*.5-g.c.top-g.c.height*.5};}
+  if(g){customer.cardPose={x:g.t.left+g.t.width*.5-g.c.left-g.c.width*.5,y:g.t.top+g.t.height*.5-g.c.top-g.c.height*.5};}
   else customer.cardPose={x:pose.x,y:pose.y};
   customer.cardContactReady=true;startDigital(true)};
  el.onpointerdown=e=>{if(!allowed()||e.button>0||bankCardDrag)return;const base=cardGeometry();if(!base)return;base.c.left-=keyPose.x;base.c.right-=keyPose.x;base.c.top-=keyPose.y;base.c.bottom-=keyPose.y;el.classList.remove('returning');bankCardDrag={pointer:e.pointerId,x:e.clientX-keyPose.x,y:e.clientY-keyPose.y,base,pose:{x:0,y:0,valid:false},moved:false};el.setPointerCapture?.(e.pointerId);el.classList.add('dragging');e.preventDefault?.()};
- el.onpointermove=e=>{const d=bankCardDrag;if(!d||e.pointerId!==d.pointer)return;if(!allowed()){reset();return}const dx=e.clientX-d.x,dy=e.clientY-d.y;d.moved||=Math.hypot(dx,dy)>8;d.pose=move(dx,dy,d.base);if(transaction.requiresPin&&dx< -42&&Math.abs(dy)<85){d.pose.valid=true;scene.classList.add('card-in-range')}};
- el.onpointerup=e=>{const d=bankCardDrag;if(!d||e.pointerId!==d.pointer)return;if(d.moved){const dx=e.clientX-d.x,dy=e.clientY-d.y;d.pose=move(dx,dy,d.base);if(transaction.requiresPin&&dx< -42&&Math.abs(dy)<85)d.pose.valid=true}finish(d.moved?d.pose:null)};
+ el.onpointermove=e=>{const d=bankCardDrag;if(!d||e.pointerId!==d.pointer)return;if(!allowed()){reset();return}const dx=e.clientX-d.x,dy=e.clientY-d.y;d.moved||=Math.hypot(dx,dy)>8;d.pose=move(dx,dy,d.base)};
+ el.onpointerup=e=>{const d=bankCardDrag;if(!d||e.pointerId!==d.pointer)return;if(d.moved){const dx=e.clientX-d.x,dy=e.clientY-d.y;d.pose=move(dx,dy,d.base)}finish(d.moved?d.pose:null)};
  el.onpointercancel=reset;el.onlostpointercapture=()=>{if(bankCardDrag)reset()};
  el.onclick=()=>{};
  el.onkeydown=e=>{if(!allowed())return;const shifts={ArrowLeft:[-12,0],ArrowRight:[12,0],ArrowUp:[0,-12],ArrowDown:[0,12]};if(e.key==='Escape'){e.preventDefault();reset();return}if(e.key==='Enter'||e.key===' '){e.preventDefault();finish(keyPose);return}if(!shifts[e.key])return;e.preventDefault();const base=cardGeometry();base.c.left-=keyPose.x;base.c.right-=keyPose.x;base.c.top-=keyPose.y;base.c.bottom-=keyPose.y;keyPose=move(keyPose.x+shifts[e.key][0],keyPose.y+shifts[e.key][1],base)};
 }
 function positionCustomerDialogue(){
- const scene=document.querySelector('.store-scene'),art=$('customerArt'),bubble=$('speech'),info=$('customerInfo');
- if(!scene||!art||!bubble||!info)return;
- const s=scene.getBoundingClientRect();if(s.width<1||s.height<1)return;
- // Leave actual space for the speech on narrow screens while keeping the desktop art unchanged.
- const compact=s.width<540;
- art.style.left=compact?'32%':'';
- art.style.width=compact?Math.round(Math.min(166,Math.max(118,s.width*.36)))+'px':'';
- // Use layout coordinates, not getBoundingClientRect() on the animated avatar.
- // The arrival/breathing animations temporarily change its transformed bounds.
- const center=art.offsetLeft,half=art.offsetWidth/2;
- const artLeft=center-half,artRight=center+half;
- const edge=compact?10:16,gap=compact?14:24;
- const freeRight=s.width-artRight-gap-edge,freeLeft=artLeft-gap-edge;
- const minWidth=compact?Math.min(128,s.width*.33):140;
- const onRight=freeRight>=minWidth||(freeRight>=freeLeft);
- const available=Math.max(1,onRight?freeRight:freeLeft);
- const width=Math.min(compact?164:240,available);
- // The bubble must stay completely outside the customer's rectangular area.
- const left=onRight?artRight+gap:artLeft-gap-width;
- bubble.classList.toggle('speech-left',!onRight);
- bubble.style.left=Math.max(edge,Math.round(left))+'px';
- bubble.style.right='auto';bubble.style.bottom='auto';
- bubble.style.width=Math.round(width)+'px';
- bubble.style.minWidth='0px';bubble.style.maxWidth=Math.round(width)+'px';
- const infoTop=info.getBoundingClientRect().top-s.top;
- bubble.style.maxHeight=Math.max(32,Math.floor(infoTop-44))+'px';
- const height=bubble.getBoundingClientRect().height;
- const upper=Math.max(18,Math.min(art.offsetTop+art.offsetHeight*.16,infoTop-height-12));
- bubble.style.top=Math.round(upper)+'px';
+ const scene=document.querySelector('.store-scene'),art=$('customerArt'),bubble=$('speech'),info=$('customerInfo');if(!scene||!art||!bubble||!info)return;
+ const s=scene.getBoundingClientRect(),a=art.getBoundingClientRect(),i=info.getBoundingClientRect();if(!s.width||!s.height)return;
+ const left=Math.min(s.width-110,Math.max(8,a.left-s.left+a.width*.75+8)),width=Math.max(100,Math.min(250,s.width-left-12));
+ bubble.style.left=left+'px';bubble.style.right='auto';bubble.style.width=width+'px';bubble.style.maxWidth=width+'px';bubble.style.bottom='auto';bubble.style.maxHeight=Math.max(28,i.top-s.top-30)+'px';
+ const height=bubble.getBoundingClientRect().height,top=Math.max(22,Math.min(a.top-s.top+a.height*.45-height*.5,i.top-s.top-height-8));bubble.style.top=top+'px';
 }
-
-window.addEventListener('resize',()=>{cancelBankCardDrag();if(customer?.method==='card'&&['pin','processing','contact','inserting'].includes(customer.cardStage))setCardPose(true);if(!$('floatingCalculator')?.hidden&&calculatorPosition)positionCalculator(calculatorPosition.x,calculatorPosition.y);requestAnimationFrame(positionCustomerDialogue)});
+window.addEventListener('resize',()=>{cancelBankCardDrag();if(customer?.method==='card'&&['pin','processing','contact'].includes(customer.cardStage))setCardPose(true);if(!$('floatingCalculator')?.hidden&&calculatorPosition)positionCalculator(calculatorPosition.x,calculatorPosition.y);requestAnimationFrame(positionCustomerDialogue)});
 window.visualViewport?.addEventListener('resize',()=>{if(!$('floatingCalculator')?.hidden&&calculatorPosition)positionCalculator(calculatorPosition.x,calculatorPosition.y)});
 document.addEventListener('fullscreenchange',()=>requestAnimationFrame(positionCustomerDialogue));
 if(typeof ResizeObserver!=='undefined'){const sceneObserver=new ResizeObserver(()=>requestAnimationFrame(positionCustomerDialogue));const scene=document.querySelector('.store-scene');if(scene)sceneObserver.observe(scene);sceneObserver.observe($('speech'));}
