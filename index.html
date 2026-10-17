@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#173f37"><meta name="description" content="Jaga kaunter pasar mini anda. Scan barang, timbang hasil segar, kira baki dan bina Kedai Kita!">
 <title>Kedai Kita — Cashier Simulator</title>
-<link id="gameStyles" rel="stylesheet" href="style.css?v=2026-10-17-classic-controls-v3">
+<link id="gameStyles" rel="stylesheet" href="style.css?v=2026-10-17-refund-profit-v4">
 </head>
 <body>
 <div class="app" id="gameApp">
@@ -12,7 +12,7 @@
     <a class="brand" href="./" aria-label="Kedai Kita"><span class="brand-icon" data-icon="basket"></span><span>Kedai<span class="brand-light">Kita<span class="brand-dot">.</span></span><small>PASAR MINI, CERITA BESAR</small></span></a>
     <div class="day-pill"><span class="sun" data-icon="sun"></span><span><small>SYIF SEMASA</small><b id="dayLabel">Hari 01</b></span><span class="open-tag">BUKA</span></div>
     <div class="top-stats"><span><small>DUIT KEDAI</small><b id="walletLabel">RM 0.00</b></span><span class="combo-stat"><small>COMBO</small><b id="comboLabel">×0 <span>✦</span></b></span></div>
-    <nav class="tools" id="gameTools" aria-label="Kawalan game"><button id="shopBtn" class="icon-btn" title="Naik taraf kedai" aria-label="Naik taraf kedai" data-icon="shop"></button><button id="accountBtn" class="account-nav-btn" title="Log masuk / akaun" aria-label="Akaun dan simpanan cloud"><span data-icon="user"></span><span id="accountBtnText">Akaun</span></button><button id="soundBtn" class="icon-btn" title="Bunyi" aria-label="Bunyi" data-icon="volume"></button><button id="fullBtn" class="icon-btn" title="Skrin penuh" aria-label="Skrin penuh" data-icon="expand"></button><button id="pauseBtn" class="icon-btn" title="Jeda dan bantuan" aria-label="Jeda dan bantuan" data-icon="pause"></button></nav>
+    <nav class="tools" id="gameTools" aria-label="Kawalan game"><button id="shopBtn" class="icon-btn" title="Naik taraf kedai" aria-label="Naik taraf kedai" data-icon="shop"></button><button id="accountBtn" class="account-nav-btn" title="Log masuk / akaun" aria-label="Akaun dan simpanan permainan"><span data-icon="user"></span><span id="accountBtnText">Akaun</span></button><button id="soundBtn" class="icon-btn" title="Bunyi" aria-label="Bunyi" data-icon="volume"></button><button id="fullBtn" class="icon-btn" title="Skrin penuh" aria-label="Skrin penuh" data-icon="expand"></button><button id="pauseBtn" class="icon-btn" title="Jeda dan bantuan" aria-label="Jeda dan bantuan" data-icon="pause"></button></nav>
   </header>
   <nav class="utility-bar" aria-label="Fungsi kedai">
     <button id="missionBtn"><span data-icon="flag"></span><span>Misi</span><i></i></button>
@@ -75,9 +75,9 @@
 <dialog id="modal"><div id="modalContent"></div></dialog>
 <dialog id="accountOverlay" class="account-overlay" aria-labelledby="accountTitle" aria-modal="true">
   <div class="account-panel">
-    <div class="account-logo">✦ <b>Kedai<span>Kita.</span></b> <small>CLOUD SAVE</small></div>
+    <div class="account-logo">✦ <b>Kedai<span>Kita.</span></b> <small>SIMPAN PROGRES</small></div>
     <h2 id="accountTitle">Selamat kembali!</h2>
-    <p id="accountHint">Daftar atau log masuk untuk simpan permainan pada Firebase.</p>
+    <p id="accountHint">Daftar atau log masuk untuk simpan progres permainan.</p>
     <p id="accountMessage" class="account-message" role="status" aria-live="polite"></p>
     <div id="accountAuthFields">
       <div class="account-tabs"><button type="button" id="accountLoginTab" class="active">Log masuk</button><button type="button" id="accountRegisterTab">Daftar akaun</button></div>
@@ -95,7 +95,7 @@
     </div>
     <div id="accountOverview" hidden>
       <div class="account-current"><span>✦</span><div><small>AKAUN AKTIF</small><strong id="accountCurrent"></strong></div></div>
-      <p class="account-sync-small" id="accountSyncLabel">Simpanan cloud disediakan</p>
+      <p class="account-sync-small" id="accountSyncLabel">Simpanan akaun tersedia</p>
     </div>
     <div class="account-actions" id="accountControls">
       <button type="button" id="accountGuest" class="account-secondary">Main sebagai tetamu (offline)</button>
@@ -103,7 +103,7 @@
       <button type="button" id="accountClose" class="primary-btn" hidden>Kembali ke game</button>
       <button type="button" id="accountLogout" class="account-text-button" hidden>Log keluar</button>
     </div>
-    <div class="account-fineprint">Log masuk menggunakan Firebase Authentication. Setiap akaun mempunyai simpanan Firebase Realtime Database sendiri.</div>
+    <div class="account-fineprint">Setiap akaun mempunyai progres permainan masing-masing.</div>
   </div>
 </dialog>
 <audio id="backgroundMusic" src="./gameplay-music.mp3" preload="metadata" loop></audio>
@@ -113,7 +113,7 @@
 <script type="module">
 // Versioned loader: the currently published version.json controls the actual CSS and app version.
 // Each release only requires updating version.json after publishing the changed files.
-const fallbackBuild = '2026-10-17-classic-controls-v3';
+const fallbackBuild = '2026-10-17-refund-profit-v4';
 let activeBuild = fallbackBuild;
 try {
   const response = await fetch('./version.json?init=' + Date.now(), {cache:'no-store'});

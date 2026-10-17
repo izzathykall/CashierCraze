@@ -17,13 +17,13 @@ const errorMalay = error => {
     'auth/weak-password': 'Kata laluan terlalu pendek. Gunakan sekurang-kurangnya 6 aksara.',
     'auth/too-many-requests': 'Terlalu banyak percubaan. Cuba lagi kemudian.',
     'auth/network-request-failed': 'Tiada sambungan rangkaian. Periksa internet.',
-    'auth/operation-not-allowed': 'Aktifkan Email/Password dalam Firebase Authentication dahulu.',
-    'auth/unauthorized-domain': 'Tambah domain laman ini dalam Firebase Authentication > Authorized domains.',
-    'PERMISSION_DENIED': 'Akses Realtime Database ditolak. Semak database.rules.json dan Publish.',
-    'permission-denied': 'Akses Realtime Database ditolak. Semak database.rules.json dan Publish.',
-    'unavailable': 'Realtime Database tidak dapat dihubungi. Cuba lagi apabila talian pulih.'
+    'auth/operation-not-allowed': 'Sistem daftar masuk belum diaktifkan. Hubungi pengendali permainan.',
+    'auth/unauthorized-domain': 'Log masuk belum dibenarkan untuk laman ini. Hubungi pengendali permainan.',
+    'PERMISSION_DENIED': 'Akses simpanan ditolak. Hubungi pengendali permainan.',
+    'permission-denied': 'Akses simpanan ditolak. Hubungi pengendali permainan.',
+    'unavailable': 'Simpanan dalam talian tidak dapat dihubungi. Cuba lagi apabila talian pulih.'
   };
-  return codes[error?.code] || (error?.message ? `Ralat: ${error.message}` : 'Ada masalah sambungan Firebase.');
+  return codes[error?.code] || 'Terdapat masalah dengan akaun atau sambungan. Cuba lagi sebentar.';
 };
 const readLocal = key => {try {return JSON.parse(localStorage.getItem(key)||'null')} catch {return null}};
 const writeLocal = (key, state) => {try {localStorage.setItem(key, JSON.stringify(state));return true} catch {return false}};
@@ -65,7 +65,7 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
   const showLoading = hint => {show();showRegion('loading');ui.title.textContent='Menyediakan kedai anda';ui.hint.textContent=hint;message('')};
   const showOverview = () => {
     show();showRegion('overview');ui.title.textContent='Akaun Kedai Kita';ui.hint.textContent='Progres kerjaya disimpan mengikut akaun ini.';
-    ui.current.textContent=user?.email||'Akaun Firebase';message(syncError?errorMalay(syncError):'Data akaun anda telah dimuatkan.');
+    ui.current.textContent=user?.email||'Akaun pemain';message(syncError?errorMalay(syncError):'Data akaun anda telah dimuatkan.');
   };
   const setMode = selected => {
     mode=selected; ui.login.classList.toggle('active',selected==='login');
@@ -86,7 +86,7 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
   };
   const stage = state => {
     queued=clone(state);delete queued._cloudPending;
-    setStatus('Menyimpan ke cloud…');if(!timer)timer=setTimeout(flush,3000);
+    setStatus('Menyimpan progres…');if(!timer)timer=setTimeout(flush,3000);
   };
   async function flush() {
     if(timer){clearTimeout(timer);timer=null}
@@ -98,10 +98,10 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
       if(user?.uid===uid){
         const local=localAccount(uid);
         if(local?._clientStamp===value._clientStamp){local._cloudPending=false;writeLocal(ACCOUNT_KEY(uid),local)}
-        syncError=null;setStatus(queued?'Menyimpan ke cloud…':'✓ Disimpan di Realtime Database');
+        syncError=null;setStatus(queued?'Menyimpan progres…':'✓ Progres disimpan');
       }
     } catch(err) {
-      if(user?.uid===uid){syncError=err;queued=queued||value;setStatus('Simpan cloud gagal · data tempatan selamat')}
+      if(user?.uid===uid){syncError=err;queued=queued||value;setStatus('Simpanan belum disegerakkan · progres selamat di peranti')}
     } finally {
       writing=false;writesPending=null;
       if(queued&&user?.uid===uid&&!syncError)timer=setTimeout(flush,3000);
@@ -118,7 +118,7 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
     hide();hydrate(state);ready=true;writeLocal(currentKey,state||capture());setStatus('✓ Progres akaun dimuatkan');
   }
   async function onSignedIn(next, token) {
-    setIdentity(next);guestMode=false;showLoading('Menyemak simpanan Realtime Database…');
+    setIdentity(next);guestMode=false;showLoading('Menyemak progres akaun…');
     try {
       const result=await api.get(snapshotRef(next.uid));
       if(token!==epoch||user?.uid!==next.uid)return;
@@ -131,7 +131,7 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
       }
       if(remote?.progress) {
         await finishAccount(remote);
-        setStatus('✓ Progres dimuatkan dari cloud');
+        setStatus('✓ Progres akaun dimuatkan');
         return;
       }
       if(saved?.progress){await finishAccount(saved);queueSave(capture());return}
@@ -147,8 +147,8 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
       await finishAccount(null);queueSave(capture());
     } catch(err) {
       if(token!==epoch)return;
-      syncError=err;setStatus('Cloud tidak dapat diakses');show();showRegion('error');
-      ui.title.textContent='Tidak dapat muat simpanan';ui.hint.textContent='Simpanan cloud tidak berjaya dibaca. Untuk elak kehilangan progres, sila cuba semula.';
+      syncError=err;setStatus('Simpanan tidak dapat diakses');show();showRegion('error');
+      ui.title.textContent='Tidak dapat muat simpanan';ui.hint.textContent='Simpanan akaun tidak berjaya dibaca. Sila cuba lagi untuk elak kehilangan progres.';
       message(errorMalay(err),true);
       ui.retry.onclick=()=>{syncError=null;onSignedIn(user,epoch)};
     }
@@ -165,7 +165,7 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
     pauseForAccount();
     if(user&&ready)showOverview();
     else if(configEnabled)showLogin();
-    else {showLogin('Realtime Database belum disambungkan. Isi firebase-config.js termasuk databaseURL untuk aktifkan log masuk dan cloud.');ui.submit.disabled=true;ui.register.disabled=true;ui.login.disabled=true;ui.reset.disabled=true;}
+    else {showLogin('Sistem akaun belum tersedia. Sila cuba kemudian.');ui.submit.disabled=true;ui.register.disabled=true;ui.login.disabled=true;ui.reset.disabled=true;}
   }
   async function logOut() {
     if(!auth||!user)return;
@@ -207,7 +207,7 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
     showLoading('Menyemak sambungan akaun…');
     const config=window.KEDAI_FIREBASE_CONFIG;
     configEnabled=configValid(config);
-    if(!configEnabled){ready=true;setStatus('Realtime Database belum disambung · mod tetamu');openAccount();return}
+    if(!configEnabled){ready=true;setStatus('Akaun belum tersedia · mod tetamu');openAccount();return}
     try {
       const path=`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/`;
       const [appModule,authModule,databaseModule]=await Promise.all([
@@ -219,7 +219,7 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
       authModule.onAuthStateChanged(auth,onAuthChange,err=>{showLogin('Sambungan login bermasalah. Cuba muat semula halaman.');message(errorMalay(err),true)});
     } catch(err) {
       configEnabled=false;ready=true;
-      setStatus('Firebase tidak dapat dimuatkan');showLogin('SDK Firebase gagal dimuatkan. Semak internet dan konfigurasi.');message(errorMalay(err),true);
+      setStatus('Sistem akaun tidak dapat dimuatkan');showLogin('Sistem akaun tidak dapat dimuatkan. Semak sambungan internet.');message(errorMalay(err),true);
       ui.submit.disabled=true;ui.register.disabled=true;ui.login.disabled=true;ui.reset.disabled=true;
     }
   }

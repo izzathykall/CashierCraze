@@ -1,6 +1,6 @@
 import {PRODUCTS,PEOPLE,UPGRADES,DENOMS,money,itemPrice,basketTotal,amountDue,dayTarget,createProgress,restoreProgress,makeCustomer,tipFor,buyUpgrade,netTotal,applyCoupon,dailyMissions,claimMission,calculateExpression,CATEGORIES,availableProducts,unlockCategory,randomManualCode,dayFinished,changeParts,machineTimings,availablePaymentMethods,tenderFor,ensureOperations,stockQuote,buyStock,stockForBasket,takeStock,stockUnits,stockTarget,stockCost,payStoreCost,receiveStoreCash,ensureShift,loseStar,settleShift,arrivalWait,clockText,customerLine,PAPER_PACK,PAPER_COST,CARD_REPAIR_COST,cardRepairCost,returnPolicy,returnMatches} from './engine.mjs';
 import {productArt,moneyArt} from './art.mjs';
-import {createCloudSync} from './cloud.mjs';
+import {createCloudSync} from './cloud.mjs?v=2026-10-17-refund-profit-v4';
 
 const $=id=>document.getElementById(id);
 const ICONS={basket:'M3 9h18l-2 11H5L3 9ZM8 9l4-7 4 7M8 13v3m4-3v3m4-3v3',sun:'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5',shop:'M3 10V5h18v5M4 10v11h16V10M2 10a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0M9 21v-7h6v7',volume:'M11 4 6 8H2v8h4l5 4V4Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14',mute:'M11 4 6 8H2v8h4l5 4V4Zm5 5 6 6m0-6-6 6',expand:'M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5',pause:'M8 4v16m8-16v16',scan:'M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M6 12h12M7 9v6m3-6v6m4-6v6m3-6v6',scale:'M6 7h12l3 14H3L6 7Zm3 0V5a3 3 0 0 1 6 0v2m-3 4v5m-2-2h4',arrow:'M4 12h16m-6-6 6 6-6 6',heart:'M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z',flag:'M5 21V3m0 0c5-3 9 3 14 0v10c-5 3-9-3-14 0',receipt:'M5 3h14v19l-3-2-4 2-4-2-3 2V3Zm3 5h8m-8 4h8m-8 4h5',lock:'M6 10h12v11H6V10Zm3 0V6a3 3 0 0 1 6 0v4',card:'M2 5h20v14H2V5Zm0 5h20M6 15h4',qr:'M3 3h6v6H3V3Zm12 0h6v6h-6V3ZM3 15h6v6H3v-6Zm12 0h3v3h3v3h-6v-6Zm6-3v3M12 3v3m0 6v3M3 12h6m3 6v3',cash:'M2 5h20v14H2V5Zm10 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM5 8h1m12 8h1',check:'M5 12l4 4L19 6',close:'M6 6l12 12M6 18 18 6',play:'m8 4 12 8-12 8V4Z',snow:'M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 4l3 3 3-3M9 20l3-3 3 3M4 10l4-1-1-4m13 9-4 1 1 4M4 14l4 1-1 4m13-9-4-1 1-4',spark:'m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7Z',undo:'M8 4 3 9l5 5M3 9h10a7 7 0 0 1 0 14',reset:'M4 8a9 9 0 1 1-1 8M4 3v5h5',help:'M9 8a3 3 0 1 1 5 2c-1 1-2 1-2 4m0 4h.01M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Z'};
@@ -14,7 +14,7 @@ let paymentMinimized=false,musicUnlocked=false,musicLevel=0,musicTarget=-1,music
 let calculatorPosition=null,calculatorDrag=null,musicStarting=false,musicGain=null,musicSource=null,chaChingBuffer=null,chaChingPromise=null,chaChingSource=null;
 let renderedBasket=null,renderedSceneCustomer=undefined,selectedCodeItem=null,calculatorInput='',calculatorResult='',advancePending=false;
 const STORAGE='kedai-kita-v1';
-const APP_BUILD=window.__KEDAI_ACTIVE_VERSION__||'2026-10-17-classic-controls-v3';
+const APP_BUILD=window.__KEDAI_ACTIVE_VERSION__||'2026-10-17-refund-profit-v4';
 const UPDATE_CHECK_URL='./version.json';
 let storageOK=true,progress=createProgress(),session=null,phase='scan',customer=null,mode='career',combo=0,busy=false,paused=true,modalKind='intro',cashPicked=[],lastTip=0,lastEarned=0,toastTimer,audioCtx,scannerBuffer=null,scannerBufferPromise=null,scannerSource=null,sound=true,drag=null,scanToken=0;
 let updatePrompt=null,updateCheckTimer=null;
@@ -550,22 +550,62 @@ function renderReturnPayment(){
  if(phase==='scan'){area.innerHTML=`<div class="return-label">${icon('undo')} Pelanggan memulangkan barang</div><p class="payment-hint">Scan barang kemudian bandingkan resit pelanggan dengan rekod kedai.</p><button class="primary-btn" id="checkoutBtn" ${!all?'disabled':''}>Semak pemulangan ${icon('arrow')}</button>`;$('checkoutBtn').onclick=()=>{if(paused||!all||!ensurePaper())return;phase='offer';paymentMinimized=false;renderPayment();save()};return}
  if(phase!=='offer'){area.innerHTML='';return}
  const receipt=customer.returnClaim,fields=[['No. resit',receipt?.receipt,record?.receipt],['Hari pembelian',receipt?'Hari '+receipt.day:'—',record?'Hari '+record.day:'—'],['Nama barang',PRODUCTS.find(p=>p.id===receipt?.productId)?.name,PRODUCTS.find(p=>p.id===record?.productId)?.name],['Kuantiti',receipt?.quantity+' unit',record?'1 unit':'—'],['Amaun dibayar',receipt?money(receipt.paid):'—',record?money(record.paid):'—']];
- area.innerHTML=`<div class="return-review"><div class="return-case"><div class="return-product">${productArt(customer.items[0].id)}<div><small>BARANG DI KAUNTER</small><h3>${customer.items[0].name}</h3><p>${customer.returnReason}</p><b>${customer.returnCondition}</b></div></div><div class="return-policy"><b>Polisi kedai</b><p>${rule?'Pemulangan dalam '+rule.days+' hari selepas pembelian. Resit mesti sepadan.':'Kategori ini tidak layak dipulangkan.'}</p><small>Hari semasa: ${progress.day} · ${record?.returned?'Rekod sudah dipulangkan':'Rekod belum dipulangkan'}</small></div></div><div class="receipt-compare"><div class="compare-heading"><span>MAKLUMAT</span><b>RESIT PELANGGAN</b><b>REKOD SISTEM</b></div>${fields.map(([label,claim,system])=>`<div class="compare-row"><span>${label}</span><strong>${claim||'Tidak ditemui'}</strong><strong>${system||'Tidak ditemui'}</strong></div>`).join('')}</div><div class="return-decision"><p id="returnError" class="code-error">${customer.returnError||'Bandingkan resit dengan rekod sistem kemudian buat keputusan.'}</p><div><button class="primary-btn" id="approveReturn">Lulus pemulangan · ${money(receipt?.paid||0)}</button><button class="secondary-btn danger-btn" id="rejectReturn">Tolak pemulangan</button></div></div></div>`;
+ area.innerHTML=`<div class="return-review"><div class="return-case"><div class="return-product">${productArt(customer.items[0].id)}<div><small>BARANG DI KAUNTER</small><h3>${customer.items[0].name}</h3><p>${customer.returnReason}</p><b>${customer.returnCondition}</b></div></div><div class="return-policy"><b>Polisi kedai</b><p>${rule?'Pemulangan dalam '+rule.days+' hari selepas pembelian. Resit mesti sepadan.':'Kategori ini tidak layak dipulangkan.'}</p><small>Hari semasa: ${progress.day} · ${record?.returned?'Rekod sudah dipulangkan':'Rekod belum dipulangkan'}</small></div></div><div class="receipt-compare"><div class="compare-heading"><span>MAKLUMAT</span><b>RESIT PELANGGAN</b><b>REKOD SISTEM</b></div>${fields.map(([label,claim,system])=>`<div class="compare-row"><span>${label}</span><strong>${claim||'Tidak ditemui'}</strong><strong>${system||'Tidak ditemui'}</strong></div>`).join('')}</div><div class="return-decision"><p id="returnError" class="code-error">Bandingkan maklumat dan pilih Lulus atau Tolak.</p><div><button class="primary-btn" id="approveReturn">Lulus pemulangan · ${money(receipt?.paid||0)}</button><button class="secondary-btn danger-btn" id="rejectReturn">Tolak pemulangan</button></div></div></div>`;
  $('approveReturn').onclick=completeReturn;$('rejectReturn').onclick=rejectReturn;
 }
-function penalizeReturn(reason){if(customer.returnPenalty)return 0;customer.returnPenalty=true;return loseStar(session,reason)}
+// Penalti dalaman: pemain tidak ditunjukkan sama ada keputusan refund betul atau salah.
+// Nilai dalam sen (500 = RM5). Ia mengurangkan untung serta baki kedai.
+const RETURN_DECISION_PENALTY=500;
+function applyReturnDecisionPenalty(store){
+ if(customer.returnPenalty)return 0;
+ customer.returnPenalty=true;
+ payStoreCost(store,RETURN_DECISION_PENALTY,true);
+ session.expenses+=RETURN_DECISION_PENALTY;
+ session.earned-=RETURN_DECISION_PENALTY;
+ if(mode==='career')progress.lifetime-=RETURN_DECISION_PENALTY;
+ return RETURN_DECISION_PENALTY;
+}
+function finishReturnDecision(payout=0){
+ customer.paid=true;
+ lastTip=0;
+ lastEarned=-payout;
+ session.served++;
+ session.clockMinutes=Math.min(1320,session.clockMinutes+90);
+ phase='success';busy=false;
+ render();
+ showTransactionResult(0,0,'Urusan pemulangan selesai.');
+ save();advance();
+}
 function rejectReturn(){
  if(paused||busy||customer?.kind!=='return'||customer.paid||phase!=='offer'||!ensurePaper())return;
- const record=operatingStore().sales.find(x=>x.id===customer.returnId),valid=returnMatches(record,customer.returnClaim,customer.items[0],progress.day),loss=valid?penalizeReturn('Pemulangan sah ditolak.'):0;
- customer.paid=true;lastTip=0;lastEarned=0;session.served++;phase='success';session.clockMinutes=Math.min(1320,session.clockMinutes+90);render();showTransactionResult(0,loss,valid?'Resit sebenarnya sepadan. Pemulangan ini layak diterima.':'Pemulangan tidak sah berjaya ditolak. Tiada wang dibayar.');save();advance();
+ const store=operatingStore(),record=store.sales.find(x=>x.id===customer.returnId);
+ const valid=returnMatches(record,customer.returnClaim,customer.items[0],progress.day);
+ const penalty=valid?applyReturnDecisionPenalty(store):0;
+ finishReturnDecision(penalty);
 }
 function completeReturn(){
  if(paused||busy||customer?.kind!=='return'||customer.paid||phase!=='offer'||!ensurePaper())return;
  const store=operatingStore(),record=store.sales.find(x=>x.id===customer.returnId),item=customer.items[0];
- if(!returnMatches(record,customer.returnClaim,item,progress.day)){const loss=penalizeReturn('Cuba meluluskan resit yang tidak sah.');customer.returnError='Data atau syarat tidak sepadan. Refund disekat. Tolak pemulangan ini.';renderHeader();renderPayment();showTransactionResult(0,loss,customer.returnError);save();if(session.stars===0)showStarRecovery();return}
- const restock=returnPolicy(item).restock,loss=record.paid-(restock?record.cost:0);
- payStoreCost(store,record.paid,true);record.returned=true;if(restock)store.inventory[record.productId]+=1;store.paper--;customer.paid=true;lastTip=0;lastEarned=-loss;session.served++;session.returnCount++;session.refunds+=record.paid;session.earned-=loss;if(mode==='career')progress.lifetime-=loss;
- phase='success';session.clockMinutes=Math.min(1320,session.clockMinutes+90);busy=false;render();save();playChaChing();showTransactionResult(0,0,'Refund '+money(record.paid)+' selesai. '+(restock?'Barang dimasukkan semula ke stok.':'Barang diasingkan daripada stok jualan.'));advance();
+ const valid=returnMatches(record,customer.returnClaim,item,progress.day);
+ // Keputusan salah tidak disekat atau diberitahu; ia terus mengurangkan keuntungan.
+ const refund=valid?record.paid:Math.max(0,Math.round(Number(customer.returnClaim?.paid)||0));
+ const penalty=valid?0:applyReturnDecisionPenalty(store);
+ payStoreCost(store,refund,true);
+ if(valid){
+  const restock=returnPolicy(item).restock;
+  record.returned=true;
+  if(restock)store.inventory[record.productId]+=1;
+ }
+ store.paper--;
+ session.returnCount++;
+ session.refunds+=refund;
+ // Refund sebenar ialah wang yang keluar dari kedai. Kos barang yang boleh
+ // dijual semula ditolak daripada jumlah kerugian sahaja untuk refund sah.
+ const restockCost=valid&&returnPolicy(item).restock?record.cost:0;
+ const loss=refund-restockCost;
+ session.earned-=loss;
+ if(mode==='career')progress.lifetime-=loss;
+ finishReturnDecision(loss+penalty);
 }
 function showTransactionResult(tip,starLost=0,reason='',overpaid=0){
  const el=$('transactionResult');clearTimeout(resultTimer);el.hidden=false;el.innerHTML=`<div class="result-check">${icon('check')}</div><small>${phase==='lost'?'PELANGGAN TELAH PERGI':customer?.kind==='return'?(phase==='offer'?'SEMAKAN PEMULANGAN':'URUSAN PULANGAN SELESAI'):'PAYMENT APPROVED'}</small><strong>${tip>0?'Tip +'+money(tip):starLost?'Servis perlu diperbaiki':'Terima kasih!'}</strong>${starLost?`<div class="result-stars">${'★'.repeat(session.stars)+'☆'.repeat(3-session.stars)}</div>`:''}<p>${starLost?'−'+starLost+' bintang · ':''}${reason||customerLine(customer||{},'thanks')}</p>${overpaid?`<span>Baki terlebih ${money(overpaid)} · ditolak pada akhir hari</span>`:''}`;el.classList.remove('show');void el.offsetWidth;el.classList.add('show');resultTimer=setTimeout(()=>{el.hidden=true},2700);
