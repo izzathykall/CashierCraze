@@ -546,13 +546,14 @@ export const CATEGORIES = [
 {"id": "bakery", "name": "Bakeri & sarapan", "cost": 5800, "art": "croissant", "description": "4 pilihan baharu untuk rak kedai anda."},{"id": "frozen", "name": "Makanan sejuk beku", "cost": 9000, "art": "nuggets", "description": "4 pilihan baharu untuk rak kedai anda."},{"id": "baby", "name": "Keperluan bayi", "cost": 9900, "art": "diapers", "description": "4 pilihan baharu untuk rak kedai anda."},{"id": "pets", "name": "Haiwan peliharaan", "cost": 8100, "art": "catfood", "description": "4 pilihan baharu untuk rak kedai anda."},{"id": "stationery", "name": "Alat tulis", "cost": 4500, "art": "notebook", "description": "4 pilihan baharu untuk rak kedai anda."},{"id": "garden", "name": "Taman & kebun", "cost": 7200, "art": "soil", "description": "4 pilihan baharu untuk rak kedai anda."},{"id": "health", "name": "Penjagaan kesihatan", "cost": 8100, "art": "plaster", "description": "4 pilihan baharu untuk rak kedai anda."}
 ];
 export const UPGRADES = [
-  {id:'card',name:'Terminal kad',icon:'card',cost:3500,max:1,type:'payment',desc:'Buka bayaran sentuh kad dan cip kad dengan pengesahan PIN.'},
-  {id:'qr',name:'Scanner QR',icon:'qr',cost:2500,max:1,type:'payment',desc:'Buka bayaran QR. Imbas kod pada telefon pelanggan.'},
-  {id:'conveyor',name:'Motor conveyor',icon:'arrow',cost:1500,max:3,desc:'Barang maju dan tali sawat bergerak lebih pantas.'},
-  {id:'scale',name:'Penimbang pantas',icon:'scale',cost:1800,max:3,desc:'Bacaan berat stabil lebih cepat.'},
-  {id:'scanner',name:'Scanner pantas',icon:'scan',cost:2000,max:2,desc:'Scan barang lebih pantas.'},
-  {id:'comfort',name:'Pendingin hawa',icon:'snow',cost:2500,max:2,desc:'Pelanggan lebih sabar (+15 saat).'},
-  {id:'tips',name:'Kaunter premium',icon:'spark',cost:3000,max:2,desc:'Tip pelanggan bertambah 25%.'}
+  {id:'card',name:'Terminal kad',icon:'card',cost:3500,max:5,type:'payment',desc:'Tahap 1 membuka kad; tahap lanjut mengurangkan kehausan dan risiko kerosakan.'},
+  {id:'qr',name:'Scanner QR',icon:'qr',cost:2500,max:5,type:'payment',desc:'Tahap 1 membuka QR; tahap lanjut mempercepat pengesahan bayaran.'},
+  {id:'storage',name:'Kapasiti stor',icon:'basket',cost:2600,max:5,desc:'Tambah had stok 5 unit/kg setiap naik taraf. Bermula dengan 20.'},
+  {id:'conveyor',name:'Motor conveyor',icon:'arrow',cost:1500,max:5,desc:'Barang maju dan tali sawat bergerak lebih pantas.'},
+  {id:'scale',name:'Penimbang pantas',icon:'scale',cost:1800,max:5,desc:'Bacaan berat stabil lebih cepat.'},
+  {id:'scanner',name:'Scanner pantas',icon:'scan',cost:2000,max:5,desc:'Scan barang lebih pantas.'},
+  {id:'comfort',name:'Pendingin hawa',icon:'snow',cost:2500,max:5,desc:'Pelanggan lebih sabar (+15 saat).'},
+  {id:'tips',name:'Kaunter premium',icon:'spark',cost:3000,max:5,desc:'Tip pelanggan bertambah 25%.'}
 ];
 export const DENOMS = [10000,5000,2000,1000,500,100,50,20,10,5];
 export function money(cents){return 'RM '+(cents/100).toFixed(2)}
@@ -563,13 +564,15 @@ export function amountDue(customer){const total=netTotal(customer);return custom
 export function tenderFor(total){return [500,1000,2000,5000,10000,20000].find(v=>v>=total)||Math.ceil(total/10000)*10000}
 export function changeParts(cents){const parts=[];for(const value of DENOMS){const count=Math.floor(cents/value);if(count)parts.push({value,count});cents%=value}return {parts,remainder:cents}}
 export function dayTarget(day){return Math.min(12,4+day)}
-export function createProgress(){return {version:1,day:1,wallet:0,lifetime:0,served:0,bestCombo:0,upgrades:{scanner:0,scale:0,conveyor:0,comfort:0,tips:0,card:0,qr:0},history:[],unlocked:['essentials'],settings:{motion:true,theme:'mint',volume:.6,music:true,musicVolume:.2}}}
+export function createProgress(){return {version:1,day:1,wallet:0,lifetime:0,served:0,bestCombo:0,upgrades:{scanner:0,scale:0,conveyor:0,comfort:0,tips:0,storage:0,card:0,qr:0},history:[],unlocked:['essentials'],settings:{motion:true,theme:'mint',volume:.6,music:true,musicVolume:.2}}}
 export function restoreProgress(raw){try{const p=JSON.parse(raw);if(p?.version!==1||!Number.isInteger(p.day)||p.day<1||!Number.isFinite(p.wallet))return createProgress();return {...createProgress(),...p,upgrades:{...createProgress().upgrades,...p.upgrades},history:Array.isArray(p.history)?p.history.slice(-20):[],settings:{...createProgress().settings,...p.settings},unlocked:Array.isArray(p.unlocked)?[...new Set(['essentials',...p.unlocked.filter(id=>CATEGORIES.some(c=>c.id===id))])]:['essentials']}}catch{return createProgress()}}
 export function randomManualCode(rng=Math.random){return String(1000+Math.floor(rng()*9000))}
 export function availableProducts(unlocked=['essentials']){return PRODUCTS.filter(p=>unlocked.includes(p.category))}
-export function choosePerson(seen=[],rng=Math.random){const available=PEOPLE.filter(p=>!seen.includes(p.id)&&!seen.includes(p.name));return available.length?available[Math.floor(rng()*available.length)]:null}
+export function choosePerson(seen=[],rng=Math.random,forcedPersonId=null){
+ if(forcedPersonId){const candidate=PEOPLE.find(p=>p.id===forcedPersonId);if(candidate&&!seen.includes(candidate.id)&&!seen.includes(candidate.name))return candidate;}
+const available=PEOPLE.filter(p=>!seen.includes(p.id)&&!seen.includes(p.name));return available.length?available[Math.floor(rng()*available.length)]:null}
 export function makeCustomer(day,index,rng=Math.random,options={}){
- const person=choosePerson(options.seen||[],rng);if(!person)return null;
+ const person=choosePerson(options.seen||[],rng,options.forcedPersonId);if(!person)return null;
  const pool=availableProducts(options.unlocked||['essentials']);const remaining=options.stock?{...options.stock}:null;
  const count=Math.min(9,3+Math.floor(day/2)+Math.floor(rng()*3));
  const items=[];
@@ -579,7 +582,7 @@ export function makeCustomer(day,index,rng=Math.random,options={}){
  const method=index===0?'cash':methods[Math.floor(rng()*methods.length)];
  const kind=index%4===2?'vip':index%4===3?'express':'regular';
  if(day>=2&&index%3===1){const damaged=items.find(i=>!i.weighted);if(damaged){damaged.damaged=true;damaged.manualCode=randomManualCode(rng)}}
- return {person,items,method,willTip:rng()<.4,dialogueSeed:Math.floor(rng()*10000),cardFailure:method==='card'&&day>=2&&rng()<.12,total:basketTotal(items),tender:tenderFor(basketTotal(items)),patience:Math.round(Math.max(65,115-day*4)*(kind==='express'?.8:1)),elapsed:0,kind,hasCoupon:index%3===1,couponApplied:false,discount:0,requiresPin:method==='card'&&rng()<.5,cardPin:String(1000+Math.floor(rng()*9000)),cardStage:'ready',pinInput:''};
+ return {person,items,method,willTip:rng()<.4,dialogueSeed:Math.floor(rng()*10000),cardFailure:method==='card'&&day>=2&&rng()<Math.max(.02,.12-(Math.max(1,Number(options.upgrades?.card)||1)-1)*.025),total:basketTotal(items),tender:tenderFor(basketTotal(items)),patience:Math.round(Math.max(65,115-day*4)*(kind==='express'?.8:1)),elapsed:0,kind,hasCoupon:index%3===1,couponApplied:false,discount:0,requiresPin:method==='card'&&rng()<.5,cardPin:String(1000+Math.floor(rng()*9000)),cardStage:'ready',pinInput:''};
 }
 export function unlockCategory(progress,id){
  const c=CATEGORIES.find(c=>c.id===id);
@@ -624,8 +627,8 @@ export function calculateExpression(expression){
 
 export function machineTimings(upgrades={}){
  const level=(id,max)=>Math.max(0,Math.min(max,Math.floor(Number(upgrades[id])||0)));
- const conveyor=level('conveyor',3);
- return {beltMs:[1700,1200,800,500][conveyor],slideMs:[580,410,270,170][conveyor],scanMs:[450,320,190][level('scanner',2)],weighMs:[1000,750,500,300][level('scale',3)]};
+ const conveyor=level('conveyor',5);
+ return {beltMs:[1700,1200,800,500,390,310][conveyor],slideMs:[580,410,270,170,130,100][conveyor],scanMs:[450,320,230,180,140,110][level('scanner',5)],weighMs:[1000,750,570,430,330,260][level('scale',5)]};
 }
 
 export function availablePaymentMethods(upgrades={},practice=false){return ['cash',...(practice||upgrades.card>=1?['card']:[]),...(practice||upgrades.qr>=1?['qr']:[])]}
@@ -633,7 +636,8 @@ export function availablePaymentMethods(upgrades={},practice=false){return ['cas
 // Stock quantities are units for packaged goods and grams for weighed goods.
 export const STOCK_TARGET=8, PAPER_PACK=20, PAPER_COST=200, CARD_REPAIR_COST=1200;
 export function stockUnits(p){return p.weighted?p.grams:1}
-export function stockTarget(p){return p.weighted?STOCK_TARGET*1000:STOCK_TARGET}
+export function stockCapacity(progress){const lvl=Math.max(0,Math.min(5,Math.floor(Number(progress?.upgrades?.storage)||0)));return 20+5*lvl}
+export function stockTarget(p,progress=null){const amount=progress?stockCapacity(progress):STOCK_TARGET;return p.weighted?amount*1000:amount}
 // Simulated wholesale market: stable within each game day, fluctuates on the next.
 // A small product-specific cycle produces realistic variations without a network dependency.
 export function wholesaleRate(product,day=1){
@@ -662,7 +666,9 @@ export function stockQuote(p,id=null,units=null){
  const manual=units!==null;
  if(manual&&(!id||!Number.isInteger(units)||units<1||units>MAX_STOCK_PURCHASE))return {lines:[],total:0,manual:true};
  const lines=availableProducts(p.unlocked).filter(x=>!id||x.id===id).map(x=>{
-  const quantity=manual?units*(x.weighted?1000:1):Math.max(0,stockTarget(x)-p.inventory[x.id]);
+  const available=Math.max(0,stockTarget(x,p)-p.inventory[x.id]);
+  const requested=manual?units*(x.weighted?1000:1):Math.min(available,MAX_STOCK_PURCHASE*(x.weighted?1000:1));
+  const quantity=manual?(requested<=available?requested:0):requested;
   return {id:x.id,name:x.name,weighted:!!x.weighted,quantity,cost:quantity?stockCost(x,quantity,p.day):0};
  }).filter(x=>x.quantity>0);
  return {lines,total:lines.reduce((sum,x)=>sum+x.cost,0),manual};
