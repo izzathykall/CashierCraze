@@ -14,7 +14,7 @@ let paymentMinimized=false,musicUnlocked=false,musicLevel=0,musicTarget=-1,music
 let calculatorPosition=null,calculatorDrag=null,musicStarting=false,musicGain=null,musicSource=null,chaChingBuffer=null,chaChingPromise=null,chaChingSource=null;
 let renderedBasket=null,renderedSceneCustomer=undefined,selectedCodeItem=null,calculatorInput='',calculatorResult='',advancePending=false;
 const STORAGE='kedai-kita-v1';
-const APP_BUILD='2026-10-17-mobile-1';
+const APP_BUILD='2026-10-17-mobile-2';
 const UPDATE_CHECK_URL='./version.json';
 let storageOK=true,progress=createProgress(),session=null,phase='scan',customer=null,mode='career',combo=0,busy=false,paused=true,modalKind='intro',cashPicked=[],lastTip=0,lastEarned=0,toastTimer,audioCtx,scannerBuffer=null,scannerBufferPromise=null,scannerSource=null,sound=true,drag=null,scanToken=0;
 let updatePrompt=null,updateCheckTimer=null;
@@ -96,7 +96,7 @@ function renderProducts(){
  }
  let slot=0;
  for(const p of items){const el=$('product-'+p.uid);if(!el)continue;
-   if(!p.scanned){el.style.setProperty('--slot',slot);el.dataset.slot=String(slot++);el.tabIndex=slot<=5?0:-1}
+   if(!p.scanned){el.style.setProperty('--slot',slot);el.dataset.slot=String(slot++);el.tabIndex=(window.innerWidth<=760||slot<=5)?0:-1}
    el.classList.toggle('scanned',!!p.scanned);el.classList.toggle('damaged',!!p.damaged&&!p.repaired);el.classList.remove('busy');el.disabled=!!p.scanned;
    el.setAttribute('aria-label',p.name+', '+(p.scanned?'sudah dalam beg':p.damaged&&!p.repaired?'kod manual '+p.manualCode:p.weighted?'tekan untuk timbang':'tekan untuk scan'));
  }
@@ -225,7 +225,7 @@ function showCalculator(){
  if(!calculatorPosition)calculatorPosition=preferredCalculatorPosition(panel);
  positionCalculator(calculatorPosition.x,calculatorPosition.y);
  const handle=$('calcDragHandle');
- handle.onpointerdown=e=>{if(e.button>0||isCompactPhoneLayout())return;const r=panel.getBoundingClientRect();calculatorDrag={pointer:e.pointerId,x:e.clientX,y:e.clientY,left:r.left,top:r.top,moved:false};handle.setPointerCapture(e.pointerId);panel.classList.add('dragging');e.preventDefault()};
+ handle.onpointerdown=e=>{if(e.button>0)return;const r=panel.getBoundingClientRect();calculatorDrag={pointer:e.pointerId,x:e.clientX,y:e.clientY,left:r.left,top:r.top,moved:false};handle.setPointerCapture(e.pointerId);panel.classList.add('dragging');e.preventDefault()};
  handle.onpointermove=e=>{const d=calculatorDrag;if(!d||d.pointer!==e.pointerId)return;d.moved||=Math.hypot(e.clientX-d.x,e.clientY-d.y)>4;positionCalculator(d.left+e.clientX-d.x,d.top+e.clientY-d.y)};
  handle.onpointerup=e=>{if(calculatorDrag?.pointer===e.pointerId)e.preventDefault();cancelCalculatorDrag()};
  handle.onpointercancel=cancelCalculatorDrag;
@@ -244,12 +244,8 @@ function positionCalculator(x,y){
  const panel=$('floatingCalculator');if(panel.hidden)return;
  const r=panel.getBoundingClientRect(),w=window.innerWidth||1024,h=window.innerHeight||768;
  const margin=isCompactPhoneLayout()?8:12;
- if(isCompactPhoneLayout()){
-  calculatorPosition={x:margin,y:Math.max(margin,h-r.height-margin)};
- }else{
-  calculatorPosition={x:Math.max(margin,Math.min(Math.max(margin,w-r.width-margin),x)),y:Math.max(margin,Math.min(Math.max(margin,h-r.height-margin),y))};
- }
- panel.style.left='0px';panel.style.top='0px';
+ calculatorPosition={x:isCompactPhoneLayout()?margin:Math.max(margin,Math.min(Math.max(margin,w-r.width-margin),x)),y:Math.max(margin,Math.min(Math.max(margin,h-r.height-margin),y))};
+ if(panel.style.left!=='0px')panel.style.left='0px';if(panel.style.top!=='0px')panel.style.top='0px';
  panel.style.transform=`translate3d(${calculatorPosition.x}px,${calculatorPosition.y}px,0)`;
  panel.style.setProperty('--calc-x',calculatorPosition.x+'px');
  panel.style.setProperty('--calc-y',calculatorPosition.y+'px');
