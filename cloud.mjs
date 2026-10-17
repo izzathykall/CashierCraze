@@ -44,6 +44,13 @@ const errorMalay = error => {
   return codes[error?.code] || 'Terdapat masalah dengan akaun atau sambungan. Cuba lagi sebentar.';
 };
 const errorCode = error => String(error?.code || error?.name || 'UNKNOWN').replace(/[^a-zA-Z0-9/_:-]/g,'').slice(0,80);
+const errorDetails = (error,stage) => {
+  const details = [errorCode(error),String(stage||'sambungan')];
+  const reason=String(error?.message||'').replace(/[\r\n<>]/g,' ').trim();
+  if(reason) details.push(reason.slice(0,135));
+  return details.join(' · ');
+};
+const diagnostic = (stage,err) => {try {console.error('[KedaiKita Cloud]', stage,err)}catch{}};
 
 const readLocal = key => {try {return JSON.parse(localStorage.getItem(key)||'null')} catch {return null}};
 const writeLocal = (key, state) => {try {localStorage.setItem(key, JSON.stringify(state));return true} catch {return false}};
@@ -100,13 +107,14 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
   const showLoading = hint => {show();showRegion('loading');ui.title.textContent='Menyediakan kedai anda';ui.hint.textContent=hint;message('')};
   function showStartupError(step, err) {
     if(bootStalled)return;
+    diagnostic(step,err);
     bootStalled=true;bootSettled=true;
     clearTimeout(bootWatchdog);bootWatchdog=null;
     ready=false;syncError=err;
     show();showRegion('error');
     ui.title.textContent='Sambungan akaun terganggu';
     ui.hint.textContent='Permainan tidak akan menimpa progres akaun ketika sambungan bermasalah.';
-    message(`${errorMalay(err)} (Kod: ${errorCode(err)} · ${step})`,true);
+    message(`${errorMalay(err)} (Butiran: ${errorDetails(err,step)})`,true);
     ui.retry.onclick=()=>window.location.reload();
     ui.retry.textContent='Cuba semula';
     // Guest mode is explicit and uses a separate local save only.
@@ -256,7 +264,8 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
       newCredentialLogin=false;
       syncError=err;setStatus('Simpanan tidak dapat diakses');show();showRegion('error');
       ui.title.textContent='Tidak dapat muat simpanan';ui.hint.textContent='Progres anda tidak dipadam. Semak ralat di bawah atau cuba sambung semula.';
-      message(`${errorMalay(err)} (Kod: ${errorCode(err)} · ${loadStep})`,true);
+      diagnostic(loadStep,err);
+      message(`${errorMalay(err)} (Butiran: ${errorDetails(err,loadStep)})`,true);
       ui.retry.onclick=()=>{
         if(!user){showLogin('Sila log masuk semula.');return}
         syncError=null;
@@ -272,9 +281,23 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
     queued=null;if(timer){clearTimeout(timer);timer=null}
     if(next){await onSignedIn(next,token);return}
     detachSessionWatch();activeSessionToken=null;
-    setIdentity(null);hydrate(readLocal(GUEST_KEY));ready=true;syncError=null;
+    const wasSignedIn=!!user;
+    setIdentity(null);syncError=null;ready=true;
+    // The game already starts with its local guest state. Rehydrating it again
+    // during Firebase's initial null-auth callback was unnecessary, and could
+    // throw on legacy saves in Safari before the login form was even shown.
+    if(wasSignedIn){
+      try {hydrate(readLocal(GUEST_KEY));}
+      catch(err){
+        diagnostic('memulihkan mod tetamu',err);
+        ready=false;showStartupError('memulihkan simpanan tempatan',err);return;
+      }
+    }
     setStatus('Disimpan pada peranti · mod tetamu');
-    if(kickedForOtherDevice){showLogin('Akaun ini telah digunakan pada peranti lain.');ui.guest.hidden=true;message('Log masuk semula menggunakan kata laluan untuk terus bermain.',true)}
+    if(kickedForOtherDevice){
+      showLogin('Akaun ini telah digunakan pada peranti lain.');ui.guest.hidden=true;
+      message('Sesi lama tamat. Masukkan e-mel dan kata laluan semula untuk log masuk.',true);
+    }
     else if(guestMode)hide();else showLogin();
   }
   function openAccount() {
@@ -347,7 +370,14 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
       api={...authModule,...databaseModule};
       // Email/password login does not require IndexedDB or popup redirects.
       // Using localStorage persistence avoids known Safari IndexedDB auth stalls.
-      auth=authModule.initializeAuth(app,{persistence:authModule.browserLocalPersistence});
+      // getAuth is the stable SDK default and can migrate persisted sessions.
+      // If restoration fails on a particular browser, try explicitly setting
+      // storage persistence; neither route alters Realtime Database progress.
+      try {auth=authModule.getAuth(app)}
+      catch(authErr){
+        diagnostic('getAuth',authErr);
+        auth=authModule.initializeAuth(app,{persistence:authModule.browserLocalPersistence});
+      }
       db=databaseModule.getDatabase(app);
       if(bootStalled)return;
       authModule.onAuthStateChanged(auth,next=>{

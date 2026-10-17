@@ -1,37 +1,24 @@
-# Kedai Kita — Firebase Realtime Database (Konfigurasi dipasang)
+# Kedai Kita POS V5.3 — Pakej Penuh
 
-Projek Firebase yang digunakan: `kedaikita-60c28`
+Pakej ini mengandungi **semua fail** game termasuk index.html, CSS, JavaScript, audio, konfigurasi projek dan peraturan Realtime Database.
 
-Realtime Database: `https://kedaikita-60c28-default-rtdb.asia-southeast1.firebasedatabase.app`
+## Cara ganti GitHub Pages
+1. Buat backup repository atau download ZIP sedia ada dahulu.
+2. Extract ZIP ini. Upload **kandungan folder** (fail terus di root repository), bukan satu folder tambahan.
+3. Replace fail dengan nama yang sama dan Commit. Pastikan `index.html`, `app.mjs`, `cloud.mjs`, `firebase-config.js`, `version.json` semuanya berada di root.
+4. Pastikan Pages deploy berjaya. Buka semula pautan laman dan tambah `?v=pos53` untuk semakan cache.
+5. Aktifkan Firebase Authentication Email/Password. Pastikan Realtime Database Rules selaras dengan fail `database.rules.json`; publish Rules di Firebase Console jika belum, upload JSON ke GitHub sahaja tidak mengaktifkannya.
 
-## Tindakan penting dalam Firebase Console (WAJIB)
+## Keselamatan progres
+- **Jangan padam** `/users`, `/activeSessions` atau data Firebase sedia ada.
+- Bacaan gagal tidak akan mengimport progres tetamu atau menyimpan progres kosong secara automatik ke akaun.
+- Mod tetamu menggunakan simpanan setempat yang berasingan. Jangan pilih mula baharu bagi akaun yang masih ada progres belum disegerakkan.
 
-1. Buka https://console.firebase.google.com/project/kedaikita-60c28/authentication/providers lalu aktifkan **Email/Password** di Sign-in method dan simpan. Jika belum mula Authentication, tekan Get started dahulu.
-2. Pergi ke https://console.firebase.google.com/project/kedaikita-60c28/database , pilih **Realtime Database**. Jika database belum diwujudkan, create dahulu di region yang dikehendaki (URL dalam konfigurasi merujuk database tersebut).
-3. Di Realtime Database > **Rules**, gantikan rules dengan kandungan `database.rules.json`, lalu klik **Publish**. Ini penting: jangan gunakan `.read: true` / `.write: true` secara umum. Path data: `users/{uid}/games/kedai-kita`.
-4. Di **Authentication > Settings > Authorized domains**, pastikan domain GitHub Pages awak atau domain custom disenaraikan (contoh `USERNAME.github.io` tanpa `https://`, atau domain GPT Sites jika digunakan).
+## Pembaikan V5.3
+- Memperbaiki pemulihan sesi masuk ketika Firebase memulangkan pengguna belum log masuk, mengelakkan render ulang simpanan tetamu yang boleh mencetuskan `TypeError`.
+- Menambah maklumat ralat dan log diagnostik yang lebih tepat.
+- Memuatkan fail aplikasi dan CSS menggunakan penanda versi yang seragam untuk kurangkan masalah cache Safari.
+- Mengekalkan POS V5: kawalan, pembayaran kad interaktif, refund, sistem sesi aktif dan simpanan Realtime Database.
 
-## Cara main dan pasang di GitHub Pages
-
-- Pakej ini sudah mengandungi `firebase-config.js` yang siap diisi. **Tidak perlu edit lagi konfigurasi.**
-- Upload **semua fail di dalam folder ZIP** (bukan folder tambahan) ke root repository GitHub Pages. Fail permulaan ialah `index.html`.
-- Buka link GitHub Pages menggunakan HTTPS, kemudian daftar akaun menggunakan email dan kata laluan.
-- Pilih log masuk supaya progres kerjaya disimpan ke Realtime Database setiap kali game melakukan save; cloud sync dijadualkan ~3 saat selepas perubahan dan fail tempatan disimpan sebagai sandaran.
-- Pilih tetamu jika belum mahu login: progres hanya ada pada peranti tersebut. Bila login akaun kosong, game menawarkan pilihan import progres tetamu.
-- Jangan serahkan password akaun Firebase atau service account file kepada sesiapa.
-
-## Semak simpanan
-
-Dalam Firebase Console > Realtime Database > Data, cari `users` > `[uid pemain]` > `games` > `kedai-kita`, yang mengandungi `state` dengan progres dan `updatedAt`.
-
-## Penting
-
-Kod Web Firebase boleh dimasukkan ke fail awam, tetapi **bukan kunci rahsia**. Keselamatan data pengguna dikawal oleh Authentication dan Realtime Database Rules.
-Tidak ada akses Firebase Console dari fail ini: activation Authentication dan Publish Rules mesti dibuat oleh pemilik projek.
-Ujian dengan Firebase simulasi bukan pengesahan sambungan sebenar: untuk ujian live, aktifkan Email/Password + peraturan dahulu dan buat akaun ujian sendiri.
-Permainan di dua peranti secara serentak boleh menimpa simpanan sebelumnya, jadi gunakan satu peranti setiap masa.
-Versi yang sudah live di GPT Sites tidak diperbaharui secara automatik.
-
-## Fail
-
-`index.html`, `style.css`, `app.mjs`, `engine.mjs`, `art.mjs`, `cloud.mjs`, `firebase-config.js`, audio, `database.rules.json`, dan fail HTML satu-fail `KedaiKita_Firebase_CONNECTED_PREVIEW.html`.
+## Nota
+Sambungan sebenar ke akaun Firebase milik anda tidak diuji secara langsung. Jalankan ujian log masuk dan sambung syif pada Safari selepas deploy.
