@@ -488,7 +488,10 @@ export const PEOPLE = [
     "line": "Barang sedikit sahaja hari ini.",
     "hairStyle": "short",
     "glasses": true
-  }
+  },
+  {"id":"person-izzat","name":"Izzat","role":"Pelanggan tetap","community":"Jiran","skin":"#bc8b6b","hair":"#2d2927","shirt":"#649a90","line":"Singgah beli beberapa barang.","hairStyle":"short"},
+  {"id":"person-sakinah","name":"Sakinah","role":"Pelanggan tetap","community":"Jiran","skin":"#ce9d7e","hair":"#302b2b","shirt":"#b78c9c","line":"Saya mahu beli barang dapur.","scarf":true,"scarfColor":"#94768e"},
+  {"id":"person-wawa","name":"Wawa","role":"Pelanggan tetap","community":"Jiran","skin":"#cd9b7a","hair":"#322e30","shirt":"#88a5a1","line":"Saya singgah sebelum balik.","hairStyle":"long"}
 ];
 export const CATEGORIES = [
   {
@@ -501,46 +504,46 @@ export const CATEGORIES = [
   {
     "id": "fresh",
     "name": "Hasil segar",
-    "cost": 1500,
+    "cost": 2700,
     "art": "apple",
     "description": "Buah, sayur, ayam dan ikan untuk ditimbang."
   },
   {
     "id": "snacks",
     "name": "Snek & tenusu",
-    "cost": 2000,
+    "cost": 3600,
     "art": "icecream",
     "description": "Snek, jus, biskut, mentega dan aiskrim."
   },
   {
     "id": "kuih",
     "name": "Kuih tradisional",
-    "cost": 2500,
+    "cost": 4500,
     "art": "serimuka",
     "description": "12 jenis kuih kegemaran rakyat Malaysia."
   },
   {
     "id": "meals",
     "name": "Hidangan tempatan",
-    "cost": 4000,
+    "cost": 7200,
     "art": "nasi",
     "description": "Nasi lemak, satay, laksa, rendang dan banyak lagi."
   },
   {
     "id": "household",
     "name": "Penjagaan rumah",
-    "cost": 4500,
+    "cost": 8100,
     "art": "detergent",
     "description": "Barangan penjagaan diri dan kebersihan rumah."
   },
   {
     "id": "electrical",
     "name": "Peralatan elektrik",
-    "cost": 10000,
+    "cost": 18000,
     "art": "ricecooker",
     "description": "8 peralatan elektrik, termasuk periuk nasi dan kipas."
   },
-{"id": "bakery", "name": "Bakeri & sarapan", "cost": 3200, "art": "croissant", "description": "4 pilihan baharu untuk rak kedai anda."},{"id": "frozen", "name": "Makanan sejuk beku", "cost": 5000, "art": "nuggets", "description": "4 pilihan baharu untuk rak kedai anda."},{"id": "baby", "name": "Keperluan bayi", "cost": 5500, "art": "diapers", "description": "4 pilihan baharu untuk rak kedai anda."},{"id": "pets", "name": "Haiwan peliharaan", "cost": 4500, "art": "catfood", "description": "4 pilihan baharu untuk rak kedai anda."},{"id": "stationery", "name": "Alat tulis", "cost": 2500, "art": "notebook", "description": "4 pilihan baharu untuk rak kedai anda."},{"id": "garden", "name": "Taman & kebun", "cost": 4000, "art": "soil", "description": "4 pilihan baharu untuk rak kedai anda."},{"id": "health", "name": "Penjagaan kesihatan", "cost": 4500, "art": "plaster", "description": "4 pilihan baharu untuk rak kedai anda."}
+{"id": "bakery", "name": "Bakeri & sarapan", "cost": 5800, "art": "croissant", "description": "4 pilihan baharu untuk rak kedai anda."},{"id": "frozen", "name": "Makanan sejuk beku", "cost": 9000, "art": "nuggets", "description": "4 pilihan baharu untuk rak kedai anda."},{"id": "baby", "name": "Keperluan bayi", "cost": 9900, "art": "diapers", "description": "4 pilihan baharu untuk rak kedai anda."},{"id": "pets", "name": "Haiwan peliharaan", "cost": 8100, "art": "catfood", "description": "4 pilihan baharu untuk rak kedai anda."},{"id": "stationery", "name": "Alat tulis", "cost": 4500, "art": "notebook", "description": "4 pilihan baharu untuk rak kedai anda."},{"id": "garden", "name": "Taman & kebun", "cost": 7200, "art": "soil", "description": "4 pilihan baharu untuk rak kedai anda."},{"id": "health", "name": "Penjagaan kesihatan", "cost": 8100, "art": "plaster", "description": "4 pilihan baharu untuk rak kedai anda."}
 ];
 export const UPGRADES = [
   {id:'card',name:'Terminal kad',icon:'card',cost:3500,max:1,type:'payment',desc:'Buka bayaran sentuh kad dan cip kad dengan pengesahan PIN.'},
@@ -578,7 +581,19 @@ export function makeCustomer(day,index,rng=Math.random,options={}){
  if(day>=2&&index%3===1){const damaged=items.find(i=>!i.weighted);if(damaged){damaged.damaged=true;damaged.manualCode=randomManualCode(rng)}}
  return {person,items,method,willTip:rng()<.4,dialogueSeed:Math.floor(rng()*10000),cardFailure:method==='card'&&day>=2&&rng()<.12,total:basketTotal(items),tender:tenderFor(basketTotal(items)),patience:Math.round(Math.max(65,115-day*4)*(kind==='express'?.8:1)),elapsed:0,kind,hasCoupon:index%3===1,couponApplied:false,discount:0,requiresPin:method==='card'&&rng()<.5,cardPin:String(1000+Math.floor(rng()*9000)),cardStage:'ready',pinInput:''};
 }
-export function unlockCategory(progress,id){const c=CATEGORIES.find(c=>c.id===id);progress.unlocked??=['essentials'];if(!c||progress.unlocked.includes(id)||progress.wallet<c.cost)return false;progress.wallet-=c.cost;progress.unlocked.push(id);return true}
+export function unlockCategory(progress,id){
+ const c=CATEGORIES.find(c=>c.id===id);
+ progress.unlocked??=['essentials'];
+ if(!c||progress.unlocked.includes(id)||progress.wallet<c.cost)return false;
+ // Only refill the newly purchased category; never overwrite the stock of other classes.
+ ensureOperations(progress);
+ progress.wallet-=c.cost;
+ progress.unlocked.push(id);
+ for(const item of PRODUCTS.filter(p=>p.category===id)){
+  progress.inventory[item.id]=20*(item.weighted?1000:1);
+ }
+ return true;
+}
 export function dayFinished(session,day){return (session.served||0)+(session.lost||0)>=dayTarget(day)}
 export function tipFor(customer,combo,upgrades){if(customer.willTip===false)return 0;const fraction=Math.max(0,1-customer.elapsed/customer.patience);return Math.round((60+fraction*170+Math.min(combo,10)*20)*(1+(upgrades.tips||0)*.25)*(customer.kind==='vip'?1.5:1)/5)*5}
 export function buyUpgrade(progress,id){const u=UPGRADES.find(u=>u.id===id);if(!u)return false;const level=progress.upgrades[id]||0,cost=u.cost*(level+1);if(level>=u.max||progress.wallet<cost)return false;progress.wallet-=cost;progress.upgrades[id]=level+1;return true}
@@ -677,7 +692,7 @@ export function arrivalWait(minutes,rng=Math.random){return minutes<1020?0:minut
 export function clockText(minutes){const n=Math.min(1320,Math.floor(minutes));return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')}
 export const CUSTOMER_LINES={
  welcome:['Singgah beli barang dapur sebelum balik.','Hari ini nak masak untuk keluarga.','Boleh asingkan barang yang berat ya? Terima kasih!','Saya suka singgah kedai kejiranan macam ni.','Nak beli bekalan untuk hujung minggu.','Hujan tadi, nasib baik kedai masih buka.','Ada tetamu datang malam ini. Kena tambah barang.','Baru balik kerja, singgah sekejap beli barang.','Anak-anak kirim barang untuk sarapan esok.','Beli sikit dahulu, nanti saya singgah lagi.','Hai! Semoga perniagaan hari ini lancar.','Nak lengkapkan barang yang tak cukup di rumah.'],
- cash:['Saya bayar tunai ya. Tolong semak bakinya.','Ini duitnya. Boleh pulangkan baki saya?','Saya ada wang kertas, harap ada baki ya.'],card:['Saya guna kad debit. Kad saya sudah sedia.','Boleh bayar kad? Kad saya di sini.','Saya nak guna kad untuk pembelian ini.'],qr:['Saya dah buka QR pada telefon.','Boleh imbas kod e-wallet saya?','Telefon dah sedia, saya bayar QR ya.'],change:['Terima kasih. Saya tunggu baki.','Semak dulu, tak mengapa.','Boleh beri baki yang tepat ya.'],thanks:['Terima kasih, layanan awak baik!','Ini sedikit tip untuk awak. Jumpa lagi!','Semoga kedai makin maju. Terima kasih!'],returns:['Saya tersalah beli barang ini. Masih berbungkus, ini resitnya.','Barang ini belum dibuka. Boleh bantu pulangkan?','Keluarga saya terbeli dua. Saya bawa resit untuk pulangkan satu.']};
+ cash:['Saya bayar tunai ya. Tolong semak bakinya.','Ini duitnya. Boleh pulangkan baki saya?','Saya ada wang kertas, harap ada baki ya.'],card:['Saya guna kad debit. Kad saya sudah sedia.','Boleh bayar kad? Kad saya di sini.','Saya nak guna kad untuk pembelian ini.'],qr:['Saya dah buka QR pada telefon.','Boleh imbas kod e-wallet saya?','Telefon dah sedia, saya bayar QR ya.'],change:['Terima kasih. Saya tunggu baki.','Semak dulu, tak mengapa.','Boleh beri baki yang tepat ya.'],thanks:['Terima kasih, layanan awak baik!','Ini sedikit tip untuk awak. Jumpa lagi!','Semoga kedai makin maju. Terima kasih!'],thanksNoTip:['Terima kasih, jumpa lagi!','Terima kasih atas layanan hari ini.','Semoga kedai makin maju. Jumpa lagi!'],returns:['Saya tersalah beli barang ini. Masih berbungkus, ini resitnya.','Barang ini belum dibuka. Boleh bantu pulangkan?','Keluarga saya terbeli dua. Saya bawa resit untuk pulangkan satu.']};
 export function customerLine(c,key){const lines=CUSTOMER_LINES[key]||CUSTOMER_LINES.welcome;return (key==='returns'&&c.returnReason?c.returnReason:lines[(c.dialogueSeed||0)%lines.length]).replaceAll(',', '')}
 
 export function cardRepairCost(store){const health=Math.max(0,Math.min(100,store.cardHealth??100));return health===100&&!store.cardBroken?0:200+10*(100-(store.cardBroken?0:health))}

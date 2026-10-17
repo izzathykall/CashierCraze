@@ -1,6 +1,6 @@
 import {PRODUCTS,PEOPLE,UPGRADES,DENOMS,money,itemPrice,basketTotal,amountDue,dayTarget,createProgress,restoreProgress,makeCustomer,tipFor,buyUpgrade,netTotal,applyCoupon,dailyMissions,claimMission,calculateExpression,CATEGORIES,availableProducts,unlockCategory,randomManualCode,dayFinished,changeParts,machineTimings,availablePaymentMethods,tenderFor,ensureOperations,stockQuote,buyStock,MAX_STOCK_PURCHASE,LOW_STOCK_UNITS,stockForBasket,takeStock,stockUnits,stockTarget,stockCost,wholesaleChange,payStoreCost,receiveStoreCash,ensureShift,loseStar,settleShift,arrivalWait,clockText,customerLine,PAPER_PACK,PAPER_COST,CARD_REPAIR_COST,cardRepairCost,returnPolicy,returnMatches} from './engine.mjs';
 import {productArt,moneyArt} from './art.mjs';
-import {createCloudSync} from './cloud.mjs?v=2026-10-17-pos-v5-3';
+import {createCloudSync} from './cloud.mjs?v=2026-10-18-gameplay-v2';
 
 const $=id=>document.getElementById(id);
 const ICONS={basket:'M3 9h18l-2 11H5L3 9ZM8 9l4-7 4 7M8 13v3m4-3v3m4-3v3',sun:'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5',shop:'M3 10V5h18v5M4 10v11h16V10M2 10a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0M9 21v-7h6v7',volume:'M11 4 6 8H2v8h4l5 4V4Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14',mute:'M11 4 6 8H2v8h4l5 4V4Zm5 5 6 6m0-6-6 6',expand:'M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5',pause:'M8 4v16m8-16v16',scan:'M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M6 12h12M7 9v6m3-6v6m4-6v6m3-6v6',scale:'M6 7h12l3 14H3L6 7Zm3 0V5a3 3 0 0 1 6 0v2m-3 4v5m-2-2h4',arrow:'M4 12h16m-6-6 6 6-6 6',heart:'M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z',flag:'M5 21V3m0 0c5-3 9 3 14 0v10c-5 3-9-3-14 0',receipt:'M5 3h14v19l-3-2-4 2-4-2-3 2V3Zm3 5h8m-8 4h8m-8 4h5',lock:'M6 10h12v11H6V10Zm3 0V6a3 3 0 0 1 6 0v4',card:'M2 5h20v14H2V5Zm0 5h20M6 15h4',qr:'M3 3h6v6H3V3Zm12 0h6v6h-6V3ZM3 15h6v6H3v-6Zm12 0h3v3h3v3h-6v-6Zm6-3v3M12 3v3m0 6v3M3 12h6m3 6v3',cash:'M2 5h20v14H2V5Zm10 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM5 8h1m12 8h1',check:'M5 12l4 4L19 6',close:'M6 6l12 12M6 18 18 6',play:'m8 4 12 8-12 8V4Z',snow:'M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 4l3 3 3-3M9 20l3-3 3 3M4 10l4-1-1-4m13 9-4 1 1 4M4 14l4 1-1 4m13-9-4-1 1-4',spark:'m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7Z',undo:'M8 4 3 9l5 5M3 9h10a7 7 0 0 1 0 14',reset:'M4 8a9 9 0 1 1-1 8M4 3v5h5',help:'M9 8a3 3 0 1 1 5 2c-1 1-2 1-2 4m0 4h.01M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Z'};
@@ -16,7 +16,7 @@ let paymentMinimized=false,musicUnlocked=false,musicLevel=0,musicTarget=-1,music
 let calculatorPosition=null,calculatorDrag=null,musicStarting=false,musicGain=null,musicSource=null,chaChingBuffer=null,chaChingPromise=null,chaChingSource=null;
 let renderedBasket=null,renderedSceneCustomer=undefined,selectedCodeItem=null,calculatorInput='',calculatorResult='',advancePending=false;
 const STORAGE='kedai-kita-v1';
-const APP_BUILD=window.__KEDAI_ACTIVE_VERSION__||'2026-10-18-audio-1';
+const APP_BUILD=window.__KEDAI_ACTIVE_VERSION__||'2026-10-18-gameplay-v2';
 const UPDATE_CHECK_URL='./version.json';
 let storageOK=true,progress=createProgress(),session=null,phase='scan',customer=null,mode='career',combo=0,busy=false,paused=true,modalKind='intro',cashPicked=[],lastTip=0,lastEarned=0,toastTimer,audioCtx,scannerBuffer=null,scannerBufferPromise=null,scannerSource=null,sound=true,drag=null,scanToken=0;
 let updatePrompt=null,updateCheckTimer=null;
@@ -59,7 +59,7 @@ function save(){
  }catch{storageOK=false;$('saveStatus').textContent='Simpanan tidak tersedia'}
 }
 
-function beep(type='scan'){if(!sound)return;if(type==='scan'){playScannerSound();return}prepareScannerAudio();try{audioCtx??=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();const notes=type==='success'?[523,659,784]:type==='error'?[196,155]:type==='coin'?[880]:type==='start'?[392,523]:[1100];notes.forEach((freq,i)=>{const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.type='sine';o.frequency.value=freq;const start=audioCtx.currentTime+i*.11;g.gain.setValueAtTime(0,start);g.gain.linearRampToValueAtTime(.1*effectVolume(type),start+.01);g.gain.exponentialRampToValueAtTime(.001,start+.12);o.start(start);o.stop(start+.13)})}catch{}}
+function beep(type='scan'){if(!sound)return;if(type==='scan'){playScannerSound();return}prepareScannerAudio();try{audioCtx??=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();const notes=type==='success'?[523,659,784]:type==='error'?[196,155]:type==='coin'?[880]:type==='start'?[392,523]:[1100];notes.forEach((freq,i)=>{const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.type='sine';o.frequency.value=freq;const start=audioCtx.currentTime+i*.11;g.gain.setValueAtTime(0,start);g.gain.linearRampToValueAtTime(.19*effectVolume(type),start+.01);g.gain.exponentialRampToValueAtTime(.001,start+.12);o.start(start);o.stop(start+.13)})}catch{}}
 function toast(msg,error=false){$('toast').textContent=msg;$('toast').className='toast show'+(error?' error':'');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),2600);if(error)beep('error')}
 function newSession(selectedMode='career'){mode=selectedMode;if(mode==='practice')practiceStore=null;session={dayStart:JSON.parse(JSON.stringify(progress)),day:progress.day,mode,served:0,lost:0,totalSales:0,tips:0,earned:0,mistakes:0,index:0,bestCombo:0,weighed:0,scans:0,perfectCash:0,claimedMissions:[],seenPeople:[]};ensureShift(session);combo=0;initIllustrations();newCustomer()}
 function newCustomer(){
@@ -87,7 +87,7 @@ function renderScene(){
  $('customerArt').classList.toggle('happy',phase==='success');$('customerArt').classList.toggle('disappointed',phase==='lost');
  $('customerInfo').classList.toggle('vip',customer.kind==='vip');
 
- $('speech').textContent=customer.kind==='return'?(customer.returnReason||customerLine(customer,'returns')):phase==='success'?customerLine(customer,'thanks'):phase==='lost'?'Saya kena pergi dulu. Lain kali ya.':phase==='change'?customerLine(customer,'change'):phase==='offer'?customerLine(customer,customer.method):customer.hasCoupon?'Saya ada kupon 10%. Tolong gunakan diskaun saya ya.':customerLine(customer,'welcome');requestAnimationFrame(positionCustomerDialogue);
+ $('speech').textContent=customer.kind==='return'?(customer.returnReason||customerLine(customer,'returns')):phase==='success'?customerLine(customer,lastTip>0?'thanks':'thanksNoTip'):phase==='lost'?'Saya kena pergi dulu. Lain kali ya.':phase==='change'?customerLine(customer,'change'):phase==='offer'?customerLine(customer,customer.method):customer.hasCoupon?'Saya ada kupon 10%. Tolong gunakan diskaun saya ya.':customerLine(customer,'welcome');requestAnimationFrame(positionCustomerDialogue);
 }
 function renderProducts(){
  const items=customer?.items||(session?[]:PRODUCTS.filter(p=>p.category==='essentials').slice(0,5).map((p,i)=>({...p,uid:String(i),grams:1000})));
@@ -174,7 +174,7 @@ cloud=createCloudSync({
 initIllustrations();icons();renderHeader();renderScene();renderProducts();renderPayment();showIntro();
 $('inventoryBtn').onclick=()=>showInventory();$('operationsBtn').onclick=()=>showInventory();$('calcBtn').onclick=showCalculator;$('missionBtn').onclick=showMissions;$('catalogueBtn').onclick=()=>showCodePad();$('settingsBtn').onclick=showSettings;$('bagZone').onclick=showBag;$('nightBtn').onclick=toggleDark;$('undoScanBtn').onclick=undoScan;
 $('counterTab').onclick=()=>setMobileView('counter');$('paymentTab').onclick=()=>setMobileView('payment');
-$('soundBtn').onclick=()=>{sound=!sound;if(!sound){stopScannerSound();stopChaChing();stopScaleSound();stopDrawerSound()}renderHeader();if(sound)beep();save()};$('pauseBtn').onclick=()=>{if($('modal').open){if(!['intro','summary'].includes(modalKind))closeModal()}else showPause()};$('shopBtn').onclick=()=>{if(modalKind==='intro')return;showShop()};$('fullBtn').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();else toast('Ajukan peranti secara melintang untuk ruang lebih luas.')}catch{toast('Skrin penuh tidak disokong di pelayar ini.')}};
+$('soundBtn').onclick=()=>{sound=!sound;if(!sound){stopScannerSound();stopChaChing();stopScaleSound();stopDrawerSound()}renderHeader();save()};$('pauseBtn').onclick=()=>{if($('modal').open){if(!['intro','summary'].includes(modalKind))closeModal()}else showPause()};$('shopBtn').onclick=()=>{if(modalKind==='intro')return;showShop()};$('fullBtn').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();else toast('Ajukan peranti secara melintang untuk ruang lebih luas.')}catch{toast('Skrin penuh tidak disokong di pelayar ini.')}};
 $('scannerZone').onclick=()=>{if(paused)return;toast('Tekan barang berbungkus atau seret ke scanner.')};$('scaleZone').onclick=()=>{if(paused)return;toast('Tekan hasil segar atau seret ke penimbang.')};
 $('modal').addEventListener('cancel',e=>{e.preventDefault();if(!['intro','summary'].includes(modalKind))closeModal()});
 document.addEventListener('keydown',e=>{if(handleCalculatorKey(e)||handlePaymentOverlayKey(e))return;if(e.key==='Escape'||e.key.toLowerCase()==='p'){if($('modal').open){if(!['intro','summary'].includes(modalKind))closeModal()}else showPause();return}if(!paused&&phase==='offer'&&customer?.cardStage==='pin'&&(/^\d$/.test(e.key)||['Backspace','Enter'].includes(e.key))){e.preventDefault();pressPin(e.key==='Backspace'?'⌫':e.key==='Enter'?'OK':e.key);return}if(!paused&&/^[1-9]$/.test(e.key)&&customer){const p=customer.items.filter(p=>!p.scanned)[+e.key-1];if(p)processItem(p.uid)}});
@@ -293,12 +293,42 @@ function showCodePad(uid=null){
 function showSettings(){
  if(!session||modalKind==='intro')return;
  const settings=progress.settings||{motion:true,theme:'mint'};
- openModal('settings',`<div class="modal-pad"><div class="modal-heading"><div><div class="modal-kicker">KEDAI IKUT GAYA ANDA</div><h2>Tetapan.</h2></div><button class="icon-btn" id="closeSettings" aria-label="Tutup">${icon('close')}</button></div><div class="setting-row"><div><b>Semua bunyi</b><small>Aktifkan atau senyapkan audio game.</small></div><button class="toggle ${sound?'on':''}" id="toggleSound" aria-label="Efek bunyi" aria-pressed="${sound}"><i></i></button></div><div class="sound-settings"><label for="soundVolume">Volume efek bunyi <b id="volumeLabel">${Math.round(audioVolume()*100)}%</b></label><input id="soundVolume" type="range" min="0" max="100" step="5" value="${Math.round(audioVolume()*100)}" aria-label="Kekuatan bunyi"><button class="secondary-btn" id="previewScannerSound" ${sound?'':'disabled'}>${icon('volume')} Cuba bunyi scanner</button></div>${effectSettingsHTML()}${musicSettingsHTML()}<div class="setting-row"><div><b>Animasi penuh</b><small>Gerakan produk, pelanggan dan konfeti.</small></div><button class="toggle ${settings.motion!==false?'on':''}" id="toggleMotion" aria-label="Animasi penuh" aria-pressed="${settings.motion!==false}"><i></i></button></div><div class="theme-heading">Warna kedai</div><button class="secondary-btn" id="openStyles">Preview & beli warna kedai</button><p class="muted">Mod santai tidak mengubah progres kerjaya.</p><button class="primary-btn" id="backSettings">Selesai ${icon('check')}</button></div>`);
+ openModal('settings',`<div class="modal-pad"><div class="modal-heading"><div><div class="modal-kicker">KEDAI IKUT GAYA ANDA</div><h2>Tetapan.</h2></div><button class="icon-btn" id="closeSettings" aria-label="Tutup">${icon('close')}</button></div><div class="setting-row"><div><b>Semua bunyi</b><small>Aktifkan atau senyapkan audio game.</small></div><button class="toggle ${sound?'on':''}" id="toggleSound" aria-label="Efek bunyi" aria-pressed="${sound}"><i></i></button></div><div class="sound-settings"><label for="soundVolume">Volume efek bunyi <b id="volumeLabel">${Math.round(audioVolume()*100)}%</b></label><input id="soundVolume" type="range" min="0" max="100" step="5" value="${Math.round(audioVolume()*100)}" aria-label="Kekuatan bunyi"></div>${effectSettingsHTML()}${musicSettingsHTML()}<div class="setting-row"><div><b>Animasi penuh</b><small>Gerakan produk, pelanggan dan konfeti.</small></div><button class="toggle ${settings.motion!==false?'on':''}" id="toggleMotion" aria-label="Animasi penuh" aria-pressed="${settings.motion!==false}"><i></i></button></div><div class="theme-heading">Warna kedai</div><button class="secondary-btn" id="openStyles">Preview & beli warna kedai</button><p class="muted">Mod santai tidak mengubah progres kerjaya.</p><div class="game-reset-panel"><div><strong>Reset progres permainan</strong><small>Mulakan semula dari Hari 1. Semua duit, inventori, kelas barangan dan pencapaian akan dikosongkan.</small></div><button class="secondary-btn reset-open-btn" id="openResetGame">Reset data</button></div><button class="primary-btn" id="backSettings">Selesai ${icon('check')}</button></div>`);
  bindEffectSettings();bindMusicSettings();$('closeSettings').onclick=closeModal;$('backSettings').onclick=closeModal;
- $('soundVolume').oninput=()=>{progress.settings.volume=Number($('soundVolume').value)/100;$('volumeLabel').textContent=Math.round(audioVolume()*100)+'%';refreshEffectLevels();save()};$('previewScannerSound').onclick=()=>beep('scan');
- $('toggleSound').onclick=()=>{sound=!sound;if(!sound){stopScannerSound();stopChaChing();stopScaleSound();stopDrawerSound()}save();renderHeader();showSettings();if(sound)beep()};
+ $('soundVolume').oninput=()=>{progress.settings.volume=Number($('soundVolume').value)/100;$('volumeLabel').textContent=Math.round(audioVolume()*100)+'%';refreshEffectLevels();save()};
+ $('toggleSound').onclick=()=>{sound=!sound;if(!sound){stopScannerSound();stopChaChing();stopScaleSound();stopDrawerSound()}save();renderHeader();showSettings()};
  $('toggleMotion').onclick=()=>{progress.settings??={theme:'mint',motion:true};progress.settings.motion=progress.settings.motion===false;applySettings();save();showSettings()};
- $('openStyles').onclick=()=>showStyles();
+ $('openStyles').onclick=()=>showStyles();$('openResetGame').onclick=showResetGameConfirm;
+}
+
+
+// Reset is an explicit, irreversible player action. Data remains untouched until
+// the remote authenticated save succeeds; guest mode is reset separately.
+function showResetGameConfirm(){
+ const kind=modalKind;
+ if(!session||!['settings','reset-game'].includes(kind))return;
+ openModal('reset-game',`<div class="modal-pad"><div class="modal-heading"><div><div class="modal-kicker">PENGESAHAN RESET</div><h2>Reset semua progres?</h2></div><button class="icon-btn" id="cancelResetX" aria-label="Batal reset">${icon('close')}</button></div><div class="reset-warning"><b>Perhatian: tindakan ini tidak boleh dibatalkan.</b><p>Hari, duit kedai, inventori, kelas yang dibuka, upgrade, statistik dan progres syif akan kembali seperti permainan baharu. Akaun log masuk tidak dipadam.</p></div><label class="reset-confirm-label"><input type="checkbox" id="resetConfirmCheck"> <span>Saya faham semua progres akaun ini akan bermula semula.</span></label><p id="resetError" role="alert" class="code-error" aria-live="polite"></p><div class="reset-actions"><button class="secondary-btn" id="cancelResetGame">Batal</button><button class="primary-btn reset-danger" id="confirmResetGame" disabled>Ya, reset permainan</button></div></div>`);
+ const cancel=()=>showSettings();
+ $('cancelResetX').onclick=cancel;$('cancelResetGame').onclick=cancel;
+ const ok=$('confirmResetGame');$('resetConfirmCheck').onchange=()=>ok.disabled=!$('resetConfirmCheck').checked;
+ ok.onclick=async()=>{
+  if(!$('resetConfirmCheck').checked||ok.disabled)return;
+  ok.disabled=true;$('cancelResetGame').disabled=true;$('cancelResetX').disabled=true;
+  const fresh={progress:createProgress(),session:null,sound};
+  try{
+   if(cloud)await cloud.resetProgress(fresh);
+   else localStorage.setItem(STORAGE,JSON.stringify(fresh));
+   // Prevent previous game timers from continuing after the reset.
+   scanToken++;clearTimeout(resultTimer);advancePending=false;explicitPause=true;
+   closeCalculator();stopScannerSound();stopScaleSound();stopDrawerSound();stopChaChing();
+   hideUpdatePrompt();
+   hydrateGame(fresh);
+   toast('Progres berjaya direset. Selamat datang ke Hari 1!');
+  }catch(error){
+   $('resetError').textContent='Reset belum berjaya. Data lama dikekalkan. '+String(error?.message||'Semak sambungan dan cuba lagi.');
+   ok.disabled=false;$('cancelResetGame').disabled=false;$('cancelResetX').disabled=false;
+  }
+ };
 }
 
 function normalizeSession(){
@@ -470,7 +500,7 @@ function playChaChing(){
 }
 function playTapSound(){
  if(!sound||effectVolume('tap')===0)return;prepareScannerAudio();if(!audioCtx)return;
- try{const node=audioCtx.createOscillator(),gain=audioCtx.createGain(),t=audioCtx.currentTime;node.type='triangle';node.frequency.setValueAtTime(750,t);node.frequency.exponentialRampToValueAtTime(330,t+.035);gain.gain.setValueAtTime(.055*effectVolume('tap'),t);gain.gain.exponentialRampToValueAtTime(.001,t+.04);node.connect(gain);gain.connect(audioCtx.destination);node.start(t);node.stop(t+.045);node.onended=()=>{node.disconnect();gain.disconnect()}}catch{}
+ try{const node=audioCtx.createOscillator(),gain=audioCtx.createGain(),t=audioCtx.currentTime;node.type='triangle';node.frequency.setValueAtTime(750,t);node.frequency.exponentialRampToValueAtTime(330,t+.035);gain.gain.setValueAtTime(.15*effectVolume('tap'),t);gain.gain.exponentialRampToValueAtTime(.001,t+.04);node.connect(gain);gain.connect(audioCtx.destination);node.start(t);node.stop(t+.045);node.onended=()=>{node.disconnect();gain.disconnect()}}catch{}
 }
 function musicSettingsHTML(){return `<div class="setting-row"><div><b>Muzik latar</b><small>Gameplay · dimainkan berulang semasa bermain.</small></div><button class="toggle ${progress.settings.music!==false?'on':''}" id="toggleMusic" aria-label="Muzik latar" aria-pressed="${progress.settings.music!==false}"><i></i></button></div><div class="sound-settings music-settings"><label for="musicVolume">Volume muzik <b id="musicVolumeLabel">${Math.round(musicVolume()*100)}%</b></label><input id="musicVolume" type="range" min="0" max="100" step="5" value="${Math.round(musicVolume()*100)}" aria-label="Volume muzik latar"><span>Muzik terus bermain dalam Tetapan. Tekan Jeda untuk fade keluar dan berhenti.</span></div>`}
 function bindMusicSettings(){
@@ -700,7 +730,7 @@ function completeReturn(){
  finishReturnDecision(loss+penalty);
 }
 function showTransactionResult(tip,starLost=0,reason='',overpaid=0){
- const el=$('transactionResult');clearTimeout(resultTimer);el.hidden=false;el.innerHTML=`<div class="result-check">${icon('check')}</div><small>${phase==='lost'?'PELANGGAN TELAH PERGI':customer?.kind==='return'?(phase==='offer'?'SEMAKAN PEMULANGAN':'URUSAN PULANGAN SELESAI'):'PAYMENT APPROVED'}</small><strong>${tip>0?'Tip +'+money(tip):starLost?'Servis perlu diperbaiki':'Terima kasih!'}</strong>${starLost?`<div class="result-stars">${'★'.repeat(session.stars)+'☆'.repeat(3-session.stars)}</div>`:''}<p>${starLost?'−'+starLost+' bintang · ':''}${reason||customerLine(customer||{},'thanks')}</p>${overpaid?`<span>Baki terlebih ${money(overpaid)} · ditolak pada akhir hari</span>`:''}`;el.classList.remove('show');void el.offsetWidth;el.classList.add('show');resultTimer=setTimeout(()=>{el.hidden=true},2700);
+ const el=$('transactionResult');clearTimeout(resultTimer);el.hidden=false;el.innerHTML=`<div class="result-check">${icon('check')}</div><small>${phase==='lost'?'PELANGGAN TELAH PERGI':customer?.kind==='return'?(phase==='offer'?'SEMAKAN PEMULANGAN':'URUSAN PULANGAN SELESAI'):'PAYMENT APPROVED'}</small><strong>${tip>0?'Tip +'+money(tip):starLost?'Servis perlu diperbaiki':'Terima kasih!'}</strong>${starLost?`<div class="result-stars">${'★'.repeat(session.stars)+'☆'.repeat(3-session.stars)}</div>`:''}<p>${starLost?'−'+starLost+' bintang · ':''}${reason||customerLine(customer||{},tip>0?'thanks':'thanksNoTip')}</p>${overpaid?`<span>Baki terlebih ${money(overpaid)} · ditolak pada akhir hari</span>`:''}`;el.classList.remove('show');void el.offsetWidth;el.classList.add('show');resultTimer=setTimeout(()=>{el.hidden=true},2700);
 }
 
 function ensureStyle(){
@@ -748,8 +778,8 @@ function effectChoices(){return [['scanner','Scanner barcode'],['scale','Penimba
 function effectLevel(id){const v=Number(progress.settings.effects?.[id]??1);return Number.isFinite(v)?Math.max(0,Math.min(1,v)):1}
 function effectVolume(id){return audioVolume()*effectLevel(id)}
 function refreshEffectLevels(){for(const [key,source,audio]of [['scanner',scannerSource,'scannerSound'],['scale',scaleSource,'scaleSound'],['drawer',drawerSource,'drawerSound'],['chaching',chaChingSource,'chaChingSound']]){if(source?.gain)source.gain.gain.value=effectVolume(key);try{$(audio).volume=effectVolume(key)}catch{}}}
-function previewEffect(id){if(id==='scale')playScaleSound();else if(id==='drawer')playDrawerSound();else if(id==='chaching')playChaChing();else if(id==='tap')playTapSound();else beep(id==='scanner'?'scan':id)}
-function effectSettingsHTML(){return `<details class="effect-mixer"><summary>Volume setiap bunyi</summary><p>Volume utama × volume bunyi. 0% untuk senyapkan satu bunyi sahaja.</p><div>${effectChoices().map(([id,label])=>`<div class="effect-channel"><label for="effect-${id}">${label} <b id="effect-label-${id}">${Math.round(effectLevel(id)*100)}%</b></label><input type="range" min="0" max="100" step="5" id="effect-${id}" data-effect="${id}" value="${Math.round(effectLevel(id)*100)}"><button class="secondary-btn" data-preview-effect="${id}" aria-label="Cuba bunyi ${label}">${icon('play')}</button></div>`).join('')}</div></details>`}
+function previewEffect(id){if(id==='scale')playScaleSound();else if(id==='drawer')playDrawerSound();else if(id==='chaching')playChaChing();else if(id==='tap')playTapSound();else if(id!=='scanner')beep(id)}
+function effectSettingsHTML(){return `<details class="effect-mixer"><summary>Volume setiap bunyi</summary><p>Volume utama × volume bunyi. 0% untuk senyapkan satu bunyi sahaja.</p><div>${effectChoices().map(([id,label])=>`<div class="effect-channel"><label for="effect-${id}">${label} <b id="effect-label-${id}">${Math.round(effectLevel(id)*100)}%</b></label><input type="range" min="0" max="100" step="5" id="effect-${id}" data-effect="${id}" value="${Math.round(effectLevel(id)*100)}">${id==='scanner'?'':`<button class="secondary-btn" data-preview-effect="${id}" aria-label="Cuba bunyi ${label}">${icon('play')}</button>`}</div>`).join('')}</div></details>`}
 function bindEffectSettings(){$('modalContent').querySelectorAll('[data-effect]').forEach(el=>el.oninput=()=>{progress.settings.effects??={};progress.settings.effects[el.dataset.effect]=Number(el.value)/100;$('effect-label-'+el.dataset.effect).textContent=el.value+'%';refreshEffectLevels();save()});$('modalContent').querySelectorAll('[data-preview-effect]').forEach(el=>el.onclick=()=>previewEffect(el.dataset.previewEffect))}
 
 function inventoryGroupsHTML(store){

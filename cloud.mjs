@@ -216,6 +216,30 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
       if(queued&&user?.uid===uid&&!syncError)timer=setTimeout(flush,3000);
     }
   }
+  async function resetProgress(state) {
+    // A reset must never accidentally upload an old debounced snapshot later.
+    // Existing in-flight writes complete before the new clean save.
+    if(!ready)throw new Error('Simpanan akaun belum sedia. Cuba lagi sebentar.');
+    const fresh=clone(state);
+    if(user){
+      if(!api||!activeSessionToken)throw new Error('Sesi akaun telah tamat. Log masuk semula.');
+      if(writesPending){try{await writesPending}catch{/* remote save below is authoritative */}}
+      if(writing){await new Promise(resolve=>setTimeout(resolve,0));}
+      if(timer){clearTimeout(timer);timer=null}
+      const pendingBefore=queued;queued=null;
+      try{
+        const uid=user.uid, token=activeSessionToken;
+        await withTimeout(api.set(snapshotRef(uid),{version:1,state:fresh,sessionToken:token,updatedAt:api.serverTimestamp()}),DATA_TIMEOUT_MS,'reset progres akaun');
+        if(user?.uid!==uid||activeSessionToken!==token)throw new Error('Sesi akaun telah berubah semasa reset.');
+        writeLocal(ACCOUNT_KEY(uid),fresh);
+        syncError=null;setStatus('✓ Progres direset dan disimpan');
+      }catch(err){queued=pendingBefore;throw err}
+    }else{
+      if(!writeLocal(currentKey,fresh))throw new Error('Tidak dapat menyimpan reset pada peranti ini.');
+      queued=null;syncError=null;setStatus('✓ Progres tetamu direset');
+    }
+    return true;
+  }
   function queueSave(state) {
     const data=clone(state);
     if(user){data._cloudPending=true;data._clientStamp=`${Date.now()}-${++saveCounter}`}
@@ -403,5 +427,5 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
       if(!bootStalled)showStartupError('memulakan sistem akaun',err);
     }
   }
-  return {start, queueSave, flush, openAccount, getStorageKey:()=>currentKey, getUser:()=>user};
+  return {start, queueSave, flush, resetProgress, openAccount, getStorageKey:()=>currentKey, getUser:()=>user};
 }
