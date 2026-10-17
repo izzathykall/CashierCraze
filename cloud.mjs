@@ -6,6 +6,18 @@ const byId = id => document.getElementById(id);
 const trim = value => String(value ?? '').trim();
 const configValid = config => !!(config?.apiKey && config?.projectId && config?.appId && /^https:\/\//.test(config?.databaseURL || '') && !Object.values(config).some(v => String(v).includes('PASTE_')));
 const clone = data => JSON.parse(JSON.stringify(data));
+const BOOT_TIMEOUT_MS = 15000;
+const DATA_TIMEOUT_MS = 18000;
+function withTimeout(promise, duration, step) {
+  let timer;
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise((_, reject) => {timer=setTimeout(() => {
+      const error=new Error(`Masa menunggu terlalu lama (${step}).`);
+      error.code='KEDAI_TIMEOUT';reject(error);
+    }, duration)})
+  ]).finally(() => clearTimeout(timer));
+} 
 
 const errorMalay = error => {
   const codes = {
@@ -26,7 +38,8 @@ const errorMalay = error => {
     'unavailable': 'Simpanan dalam talian tidak dapat dihubungi. Cuba lagi apabila talian pulih.',
     'database/unavailable': 'Pangkalan data tidak dapat dihubungi. Semak sambungan.',
     'database/network-error': 'Masalah rangkaian semasa membaca simpanan.',
-    'database/offline': 'Sambungan pangkalan data terputus. Sambung internet dahulu.'
+    'database/offline': 'Sambungan pangkalan data terputus. Sambung internet dahulu.',
+    'KEDAI_TIMEOUT': 'Sambungan mengambil masa terlalu lama. Cuba sambung semula apabila internet stabil.'
   };
   return codes[error?.code] || 'Terdapat masalah dengan akaun atau sambungan. Cuba lagi sebentar.';
 };
@@ -54,6 +67,7 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
   let syncError = null, configEnabled = false, started = false, saveCounter = 0;
   let activeSessionToken = null, watchSessionStop = null, newCredentialLogin = false;
   let kickedForOtherDevice = false, kickingOut = false;
+  let bootWatchdog = null, bootSettled = false, bootStalled = false;
   const sessionPath = uid => api.ref(db, `activeSessions/${uid}`);
   const browserSessionKey = uid => `kk-active-session-${uid}`;
   const makeSessionToken = () => {
@@ -84,6 +98,28 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
     ui.guest.hidden=false;message('');setMode('login');
   };
   const showLoading = hint => {show();showRegion('loading');ui.title.textContent='Menyediakan kedai anda';ui.hint.textContent=hint;message('')};
+  function showStartupError(step, err) {
+    if(bootStalled)return;
+    bootStalled=true;bootSettled=true;
+    clearTimeout(bootWatchdog);bootWatchdog=null;
+    ready=false;syncError=err;
+    show();showRegion('error');
+    ui.title.textContent='Sambungan akaun terganggu';
+    ui.hint.textContent='Permainan tidak akan menimpa progres akaun ketika sambungan bermasalah.';
+    message(`${errorMalay(err)} (Kod: ${errorCode(err)} · ${step})`,true);
+    ui.retry.onclick=()=>window.location.reload();
+    ui.retry.textContent='Cuba semula';
+    // Guest mode is explicit and uses a separate local save only.
+    ui.guest.hidden=false;
+    ui.guest.disabled=false;
+    ui.guest.textContent='Main sebagai tetamu (offline)';
+    ui.guest.onclick=()=>{
+      guestMode=true;user=null;ready=true;currentKey=GUEST_KEY;
+      hydrate(readLocal(GUEST_KEY));hide();
+      setStatus('Disimpan pada peranti · mod tetamu');
+    };
+    ui.logout.hidden=true;
+  }
   const showOverview = () => {
     show();showRegion('overview');ui.title.textContent='Akaun Kedai Kita';ui.hint.textContent='Progres kerjaya disimpan mengikut akaun ini.';
     ui.current.textContent=user?.email||'Akaun pemain';message(syncError?errorMalay(syncError):'Data akaun anda telah dimuatkan.');
@@ -121,14 +157,14 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
       token=makeSessionToken();
       // A confirmed server write becomes this account's active session.
       // The other device is signed out by its realtime session watcher.
-      await api.set(sessionPath(uid),{token,startedAt:api.serverTimestamp()});
-      const confirm=await api.get(sessionPath(uid));
+      await withTimeout(api.set(sessionPath(uid),{token,startedAt:api.serverTimestamp()}),DATA_TIMEOUT_MS,'menulis sesi aktif');
+      const confirm=await withTimeout(api.get(sessionPath(uid)),DATA_TIMEOUT_MS,'mengesahkan sesi aktif');
       if(confirm.val()?.token!==token){await sessionReplaced(uid);return false}
       saveSessionLocal(uid,token);
     }else{
       token=getSessionLocal(uid);
       if(!token){await sessionReplaced(uid);return false}
-      const result=await api.get(sessionPath(uid));
+      const result=await withTimeout(api.get(sessionPath(uid)),DATA_TIMEOUT_MS,'membaca sesi aktif');
       if(!result.exists()||result.val()?.token!==token){await sessionReplaced(uid);return false}
     }
     activeSessionToken=token;
@@ -190,7 +226,7 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
       newCredentialLogin=false;
       if(!valid||token!==epoch||user?.uid!==next.uid)return;
       loadStep='membaca progres permainan';
-      const result=await api.get(snapshotRef(next.uid));
+      const result=await withTimeout(api.get(snapshotRef(next.uid)),DATA_TIMEOUT_MS,'membaca progres');
       if(token!==epoch||user?.uid!==next.uid)return;
       const remote=result.exists()?result.val()?.state:null;
       const saved=localAccount(next.uid);
@@ -291,20 +327,38 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
     showLoading('Menyemak sambungan akaun…');
     const config=window.KEDAI_FIREBASE_CONFIG;
     configEnabled=configValid(config);
-    if(!configEnabled){ready=true;setStatus('Akaun belum tersedia · mod tetamu');openAccount();return}
+    if(!configEnabled){
+      ready=true;setStatus('Akaun belum tersedia · mod tetamu');
+      showStartupError('konfigurasi',Object.assign(new Error('Konfigurasi akaun belum tersedia.'),{code:'KEDAI_CONFIG'}));
+      return;
+    }
+    // Prevent a permanent loading screen when iOS Safari cannot restore auth state.
+    bootWatchdog=setTimeout(()=>{
+      if(bootSettled)return;
+      showStartupError('memulakan akaun',Object.assign(new Error('Auth initialization timeout'),{code:'KEDAI_TIMEOUT'}));
+    },BOOT_TIMEOUT_MS);
     try {
       const path=`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/`;
-      const [appModule,authModule,databaseModule]=await Promise.all([
+      const [appModule,authModule,databaseModule]=await withTimeout(Promise.all([
         import(path+'firebase-app.js'),import(path+'firebase-auth.js'),import(path+'firebase-database.js')
-      ]);
+      ]),BOOT_TIMEOUT_MS,'memuatkan komponen akaun');
+      if(bootStalled)return;
       const app=appModule.initializeApp(config);
       api={...authModule,...databaseModule};
-      auth=authModule.getAuth(app);db=databaseModule.getDatabase(app);
-      authModule.onAuthStateChanged(auth,onAuthChange,err=>{showLogin('Sambungan login bermasalah. Cuba muat semula halaman.');message(errorMalay(err),true)});
+      // Email/password login does not require IndexedDB or popup redirects.
+      // Using localStorage persistence avoids known Safari IndexedDB auth stalls.
+      auth=authModule.initializeAuth(app,{persistence:authModule.browserLocalPersistence});
+      db=databaseModule.getDatabase(app);
+      if(bootStalled)return;
+      authModule.onAuthStateChanged(auth,next=>{
+        if(bootStalled)return;
+        bootSettled=true;clearTimeout(bootWatchdog);bootWatchdog=null;
+        onAuthChange(next).catch(err=>{
+          if(!bootStalled){syncError=err;showStartupError('memproses log masuk',err)}
+        });
+      },err=>showStartupError('membaca status log masuk',err));
     } catch(err) {
-      configEnabled=false;ready=true;
-      setStatus('Sistem akaun tidak dapat dimuatkan');showLogin('Sistem akaun tidak dapat dimuatkan. Semak sambungan internet.');message(errorMalay(err),true);
-      ui.submit.disabled=true;ui.register.disabled=true;ui.login.disabled=true;ui.reset.disabled=true;
+      if(!bootStalled)showStartupError('memulakan sistem akaun',err);
     }
   }
   return {start, queueSave, flush, openAccount, getStorageKey:()=>currentKey, getUser:()=>user};
