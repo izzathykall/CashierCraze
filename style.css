@@ -186,36 +186,62 @@ body[data-theme="dark"] .modern-card-scene{background:radial-gradient(ellipse at
 .account-fineprint {font-size:11px;line-height:1.5;color:#829484;text-align:center;margin-top:18px;border-top:1px solid #e0ebe0;padding-top:15px}
 @media (max-width:650px) {.account-nav-btn{padding:9px}.account-nav-btn span:last-child{display:none}.account-nav-btn .icon{width:19px;height:19px}.account-panel{border-radius:19px}}
 
-/* Dialogue fix — anchor bubble beside (not over) the customer's face. */
-.store-scene .speech{
-  box-sizing:border-box;
-  overflow-x:hidden;
-  overflow-y:auto;
-  overscroll-behavior:contain;
-  overflow-wrap:break-word;
-  hyphens:auto;
-  scrollbar-width:thin;
-  box-shadow:0 7px 18px #264b3a22,0 2px 0 #9bb8a426;
+
+/* --- Mobile layout fix + smooth draggable calculator + update prompt --- */
+.floating-calculator{transform:translate3d(18px,100px,0);will-change:transform;backface-visibility:hidden;-webkit-backface-visibility:hidden;contain:layout paint}
+.floating-calculator.dragging{transition:none!important}
+.floating-calc-header,.floating-calc-body,.floating-calculator .calc-screen{transform:translateZ(0);backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.update-prompt{position:fixed;right:14px;bottom:max(18px,env(safe-area-inset-bottom) + 14px);z-index:130;border:1px solid #cdd9bd;background:#f4f8ec;color:#214939;border-radius:16px;box-shadow:0 12px 30px rgba(20,47,57,.18);display:flex;align-items:center;gap:10px;padding:12px 14px;max-width:min(92vw,320px);text-align:left}
+.update-prompt span{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:12px;background:#dfead1;color:#52754f}.update-prompt svg{width:18px;height:18px}.update-prompt b{display:block;font-size:13px}.update-prompt small{display:block;font-size:11px;color:#648066;margin-top:2px}
+body[data-theme="dark"] .update-prompt{background:#22392c;border-color:#5d7851;color:#d9e8d2}body[data-theme="dark"] .update-prompt span{background:#385139;color:#cfe0be}
+@media (max-width:760px){
+  .app{padding:calc(env(safe-area-inset-top) + 8px) 12px max(12px,env(safe-area-inset-bottom) + 8px)}
+  .topbar{height:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch}
+  .brand{grid-column:1/-1;min-width:0;font-size:24px;white-space:normal;line-height:.95}
+  .brand small{letter-spacing:1.5px;margin-top:5px}
+  .day-pill,.top-stats{margin-left:0;min-width:0}
+  .day-pill{padding:10px 12px;justify-content:flex-start}
+  .top-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .top-stats>span{background:#eef1e6;border:1px solid #dde3d4;border-radius:14px;padding:10px 12px;min-width:0}
+  .top-stats b{font-size:18px;display:block;line-height:1.05}
+  .tools{grid-column:1/-1;border-left:0;padding-left:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+  .tools .icon-btn,.tools .account-nav-btn{width:100%;min-width:0;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center}
+  .tools .icon-btn svg,.tools .account-nav-btn svg{width:20px;height:20px}
+  .account-nav-btn{padding:0 8px;font-size:11px;gap:4px}
+  .account-nav-btn span:last-child{display:inline}
+  .utility-bar{height:auto;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:2px;gap:8px;margin-bottom:10px}
+  .utility-bar::-webkit-scrollbar{display:none}
+  .utility-bar>button{flex:0 0 auto;min-width:92px;height:38px;padding:8px 10px;border-radius:12px;font-size:11px}
+  .utility-bar svg{width:14px;height:14px}
+  .activity-status{display:none}
+  .mobile-tabs{height:auto;padding-right:0;margin:0 0 10px;gap:8px}
+  .mobile-tab{min-height:42px;border-radius:12px;font-size:11px}
+  .mobile-tab b{font-size:9px;padding:3px 5px}
+  .operations-bar{gap:8px;flex-wrap:wrap;min-height:auto;padding:8px 10px;margin-bottom:10px}
+  .operations-bar>*{min-width:0}
+  .operations-bar button{min-height:36px;padding:7px 12px;border-radius:10px}
+  .section-heading{flex-wrap:wrap;align-items:flex-start}
+  .section-heading>div{flex-wrap:wrap}
+  .section-heading small{max-width:none;font-size:8px}
+  .speech{left:auto!important;right:10px!important;top:28%!important;max-width:min(42vw,172px)!important;font-size:10px;padding:10px 12px}
+  .customer-info{padding:8px 10px}
+  .patience-track{width:70px}
+  .floating-calculator{width:calc(100vw - 16px)!important;max-width:calc(100vw - 16px)!important;max-height:min(58dvh,470px);border-radius:18px;left:0!important;top:0!important;animation:none}
+  .floating-calculator .calc-screen strong{font-size:24px}
+  .floating-calculator .calc-keys button{height:44px;font-size:18px}
+  .floating-calculator .calc-presets button{min-height:34px;font-size:10px}
+  .floating-calc-header{padding:10px 10px 8px 12px}
+  .floating-calc-header #calcDragHandle{min-height:32px;cursor:default}
+  .floating-calc-header #calcDragHandle>span{display:none}
+  .floating-calc-hint{font-size:8px}
+  .update-prompt{left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom) + 10px);max-width:none}
 }
-.store-scene .speech::after{
-  content:"";
-  position:absolute;
-  left:-6px;
-  top:55%;
-  bottom:auto;
-  width:12px;
-  height:12px;
-  border:0;
-  background:#fffdf4;
-  border-left:1px solid #ffffff88;
-  border-bottom:1px solid #ffffff88;
-  transform:rotate(45deg);
-  opacity:1;
-  pointer-events:none;
+@media (max-width:420px){
+  .brand{font-size:21px}
+  .brand-icon{width:42px;height:42px}
+  .day-pill b{font-size:16px}
+  .top-stats b{font-size:17px}
+  .tools{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .tools .account-nav-btn{grid-column:1/-1}
+  .speech{max-width:160px!important;font-size:9px}
 }
-.store-scene .speech.speech-left::after{
-  left:auto;
-  right:-6px;
-  transform:rotate(225deg);
-}
-body[data-theme="dark"] .store-scene .speech::after{background:#263e33}

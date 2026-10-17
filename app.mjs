@@ -13,7 +13,11 @@ let practiceStore=null,resultTimer=null,explicitPause=false;
 let paymentMinimized=false,musicUnlocked=false,musicLevel=0,musicTarget=-1,musicFade=null,musicFramePending=false;
 let calculatorPosition=null,calculatorDrag=null,musicStarting=false,musicGain=null,musicSource=null,chaChingBuffer=null,chaChingPromise=null,chaChingSource=null;
 let renderedBasket=null,renderedSceneCustomer=undefined,selectedCodeItem=null,calculatorInput='',calculatorResult='',advancePending=false;
-const STORAGE='kedai-kita-v1';let storageOK=true,progress=createProgress(),session=null,phase='scan',customer=null,mode='career',combo=0,busy=false,paused=true,modalKind='intro',cashPicked=[],lastTip=0,lastEarned=0,toastTimer,audioCtx,scannerBuffer=null,scannerBufferPromise=null,scannerSource=null,sound=true,drag=null,scanToken=0;
+const STORAGE='kedai-kita-v1';
+const APP_BUILD='2026-10-17-mobile-1';
+const UPDATE_CHECK_URL='./version.json';
+let storageOK=true,progress=createProgress(),session=null,phase='scan',customer=null,mode='career',combo=0,busy=false,paused=true,modalKind='intro',cashPicked=[],lastTip=0,lastEarned=0,toastTimer,audioCtx,scannerBuffer=null,scannerBufferPromise=null,scannerSource=null,sound=true,drag=null,scanToken=0;
+let updatePrompt=null,updateCheckTimer=null;
 try{const raw=JSON.parse(localStorage.getItem(STORAGE)||'null');if(raw){progress=restoreProgress(JSON.stringify(raw.progress));sound=raw.sound!==false;if((raw.session?.customer?.items?.length||['waiting','supply'].includes(raw.session?.phase))&&raw.session.day===progress.day&&raw.session.mode==='career'){session=raw.session;customer=session.customer;phase=['scan','offer','change','success','lost','end','waiting','supply'].includes(session.phase)?session.phase:'scan';combo=session.combo||0;cashPicked=Array.isArray(session.cashPicked)?session.cashPicked:[];lastTip=session.lastTip||0;lastEarned=session.lastEarned||0}}}catch{storageOK=false}
 let cloud=null;
 const freshOperations=ensureOperations(progress);ensureShift(session);ensureStyle();if(session&&!session.dayStart)session.dayStart=JSON.parse(JSON.stringify(progress));if(freshOperations&&customer&&!customer.paid){const need={};for(const p of customer.items)need[p.id]=(need[p.id]||0)+stockUnits(p);for(const [id,n] of Object.entries(need))progress.inventory[id]=Math.max(progress.inventory[id],n)}
@@ -218,20 +222,37 @@ function showCalculator(){
  $('calcTender').onclick=()=>{if(customer?.method==='cash'&&customer.kind!=='return')preset((customer.tender/100).toFixed(2))};
  $('calcChange').onclick=()=>{if(customer?.method==='cash'&&customer.kind!=='return')preset((customer.tender/100).toFixed(2)+'−'+(amountDue(customer)/100).toFixed(2),String((customer.tender-amountDue(customer))/100))};
  refreshCalculatorPresets();updateCalculatorDisplay();
- if(!calculatorPosition)calculatorPosition={x:18,y:Math.max(12,(window.innerHeight||768)-panel.getBoundingClientRect().height-20)};
+ if(!calculatorPosition)calculatorPosition=preferredCalculatorPosition(panel);
  positionCalculator(calculatorPosition.x,calculatorPosition.y);
  const handle=$('calcDragHandle');
- handle.onpointerdown=e=>{if(e.button>0)return;const r=panel.getBoundingClientRect();calculatorDrag={pointer:e.pointerId,x:e.clientX,y:e.clientY,left:r.left,top:r.top};handle.setPointerCapture(e.pointerId);panel.classList.add('dragging');e.preventDefault()};
- handle.onpointermove=e=>{const d=calculatorDrag;if(!d||d.pointer!==e.pointerId)return;positionCalculator(d.left+e.clientX-d.x,d.top+e.clientY-d.y)};
- handle.onpointerup=cancelCalculatorDrag;handle.onpointercancel=cancelCalculatorDrag;
+ handle.onpointerdown=e=>{if(e.button>0||isCompactPhoneLayout())return;const r=panel.getBoundingClientRect();calculatorDrag={pointer:e.pointerId,x:e.clientX,y:e.clientY,left:r.left,top:r.top,moved:false};handle.setPointerCapture(e.pointerId);panel.classList.add('dragging');e.preventDefault()};
+ handle.onpointermove=e=>{const d=calculatorDrag;if(!d||d.pointer!==e.pointerId)return;d.moved||=Math.hypot(e.clientX-d.x,e.clientY-d.y)>4;positionCalculator(d.left+e.clientX-d.x,d.top+e.clientY-d.y)};
+ handle.onpointerup=e=>{if(calculatorDrag?.pointer===e.pointerId)e.preventDefault();cancelCalculatorDrag()};
+ handle.onpointercancel=cancelCalculatorDrag;
+ handle.onclick=e=>{if(calculatorDrag?.moved)e.preventDefault()};
  handle.onkeydown=e=>{const step=e.shiftKey?30:10,moves={ArrowLeft:[-step,0],ArrowRight:[step,0],ArrowUp:[0,-step],ArrowDown:[0,step]};if(moves[e.key]){e.preventDefault();const [x,y]=moves[e.key];positionCalculator(calculatorPosition.x+x,calculatorPosition.y+y)}};
+}
+function isCompactPhoneLayout(){return Math.min(window.innerWidth||0,window.innerHeight||0)<520||window.innerWidth<=760}
+function preferredCalculatorPosition(panel=$('floatingCalculator')){
+ const w=window.innerWidth||390,h=window.innerHeight||844;
+ if(isCompactPhoneLayout())return {x:8,y:Math.max(8,h-(panel?.getBoundingClientRect().height||320)-8)};
+ return {x:18,y:Math.max(12,h-(panel?.getBoundingClientRect().height||320)-20)};
 }
 function closeCalculator(){const panel=$('floatingCalculator');if(!panel)return;panel.hidden=true;cancelCalculatorDrag()}
 function cancelCalculatorDrag(){calculatorDrag=null;$('floatingCalculator')?.classList.remove('dragging')}
 function positionCalculator(x,y){
- const panel=$('floatingCalculator');if(panel.hidden)return;const r=panel.getBoundingClientRect(),w=window.innerWidth||1024,h=window.innerHeight||768;
- calculatorPosition={x:Math.max(8,Math.min(Math.max(8,w-r.width-8),x)),y:Math.max(8,Math.min(Math.max(8,h-r.height-8),y))};
- panel.style.left=calculatorPosition.x+'px';panel.style.top=calculatorPosition.y+'px';
+ const panel=$('floatingCalculator');if(panel.hidden)return;
+ const r=panel.getBoundingClientRect(),w=window.innerWidth||1024,h=window.innerHeight||768;
+ const margin=isCompactPhoneLayout()?8:12;
+ if(isCompactPhoneLayout()){
+  calculatorPosition={x:margin,y:Math.max(margin,h-r.height-margin)};
+ }else{
+  calculatorPosition={x:Math.max(margin,Math.min(Math.max(margin,w-r.width-margin),x)),y:Math.max(margin,Math.min(Math.max(margin,h-r.height-margin),y))};
+ }
+ panel.style.left='0px';panel.style.top='0px';
+ panel.style.transform=`translate3d(${calculatorPosition.x}px,${calculatorPosition.y}px,0)`;
+ panel.style.setProperty('--calc-x',calculatorPosition.x+'px');
+ panel.style.setProperty('--calc-y',calculatorPosition.y+'px');
 }
 function refreshCalculatorPresets(){if($('floatingCalculator')?.hidden||!$('calcTender'))return;const cash=customer?.method==='cash'&&customer.kind!=='return';$('calcTotal').disabled=!customer;$('calcTender').disabled=!cash;$('calcChange').disabled=!cash}
 function updateCalculatorDisplay(){if(!$('calcDisplay'))return;$('calcExpression').textContent=calculatorResult?calculatorInput+' =':'Kalkulator cashier';$('calcDisplay').textContent=calculatorResult||calculatorInput||'0'}
@@ -617,53 +638,42 @@ function bindBankCardDrag(){
  el.onkeydown=e=>{if(!allowed())return;const shifts={ArrowLeft:[-12,0],ArrowRight:[12,0],ArrowUp:[0,-12],ArrowDown:[0,12]};if(e.key==='Escape'){e.preventDefault();reset();return}if(e.key==='Enter'||e.key===' '){e.preventDefault();finish(keyPose);return}if(!shifts[e.key])return;e.preventDefault();const base=cardGeometry();base.c.left-=keyPose.x;base.c.right-=keyPose.x;base.c.top-=keyPose.y;base.c.bottom-=keyPose.y;keyPose=move(keyPose.x+shifts[e.key][0],keyPose.y+shifts[e.key][1],base)};
 }
 function positionCustomerDialogue(){
- const scene=document.querySelector('.store-scene'),art=$('customerArt'),bubble=$('speech'),info=$('customerInfo');
- if(!scene||!art||!bubble||!info)return;
- const s=scene.getBoundingClientRect(),i=info.getBoundingClientRect();
- // Use layout coordinates rather than the animated customer bounds. During
- // arrival the SVG slides sideways, which previously dragged speech over the face.
- const a={left:s.left+art.offsetLeft-art.offsetWidth/2,top:s.top+art.offsetTop,width:art.offsetWidth,height:art.offsetHeight};
- if(!s.width||!s.height||!a.width||bubble.hidden)return;
-
- // The actual face only occupies x=55..154 within the 200-unit avatar SVG.
- // The previous .75 anchor started directly on the cheek, obscuring the face.
- const faceRight=a.left-s.left+a.width*.77;
- const naturalLeft=faceRight+Math.max(14,a.width*.12);
- const edge=12;
- const preferredWidth=Math.min(270,Math.max(145,s.width*.34));
- const availableRight=s.width-naturalLeft-edge;
- const leftRoom=a.left-s.left+a.width*.19-edge;
- let left,width;
- if(availableRight>=105||availableRight>=leftRoom){
-   left=Math.max(edge,Math.min(naturalLeft,s.width-edge-100));
-   width=Math.max(88,Math.min(preferredWidth,s.width-left-edge));
-   bubble.classList.remove('speech-left');
- }else{
-   width=Math.max(90,Math.min(preferredWidth,leftRoom));
-   left=Math.max(edge,faceRight-a.width*.66-width-12);
-   bubble.classList.add('speech-left');
- }
- bubble.style.left=Math.round(left)+'px';
- bubble.style.right='auto';
- bubble.style.width=Math.round(width)+'px';
- bubble.style.maxWidth=Math.round(width)+'px';
- bubble.style.bottom='auto';
-
- // Leave the customer's name/patience panel completely unobstructed.
- const stripTop=i.top-s.top;
- const topMargin=s.height<150?10:18;
- const gap=9;
- bubble.style.maxHeight=Math.max(32,Math.floor(stripTop-topMargin-gap))+'px';
- const height=bubble.getBoundingClientRect().height;
- const headY=a.top-s.top+a.height*.41;
- const desiredTop=headY-height*.53;
- const top=Math.max(topMargin,Math.min(desiredTop,stripTop-height-gap));
- bubble.style.top=Math.round(top)+'px';
- bubble.style.maxHeight=Math.max(32,Math.floor(stripTop-top-gap))+'px';
+ const scene=document.querySelector('.store-scene'),art=$('customerArt'),bubble=$('speech'),info=$('customerInfo');if(!scene||!art||!bubble||!info)return;
+ const s=scene.getBoundingClientRect(),a=art.getBoundingClientRect(),i=info.getBoundingClientRect();if(!s.width||!s.height)return;
+ const left=Math.min(s.width-110,Math.max(8,a.left-s.left+a.width*.75+8)),width=Math.max(100,Math.min(250,s.width-left-12));
+ bubble.style.left=left+'px';bubble.style.right='auto';bubble.style.width=width+'px';bubble.style.maxWidth=width+'px';bubble.style.bottom='auto';bubble.style.maxHeight=Math.max(28,i.top-s.top-30)+'px';
+ const height=bubble.getBoundingClientRect().height,top=Math.max(22,Math.min(a.top-s.top+a.height*.45-height*.5,i.top-s.top-height-8));bubble.style.top=top+'px';
 }
-window.addEventListener('resize',()=>{cancelBankCardDrag();if(customer?.method==='card'&&['pin','processing','contact','inserting'].includes(customer.cardStage))setCardPose(true);requestAnimationFrame(positionCustomerDialogue)});
+window.addEventListener('resize',()=>{cancelBankCardDrag();if(customer?.method==='card'&&['pin','processing','contact','inserting'].includes(customer.cardStage))setCardPose(true);if(!$('floatingCalculator')?.hidden&&calculatorPosition)positionCalculator(calculatorPosition.x,calculatorPosition.y);requestAnimationFrame(positionCustomerDialogue)});
+window.visualViewport?.addEventListener('resize',()=>{if(!$('floatingCalculator')?.hidden&&calculatorPosition)positionCalculator(calculatorPosition.x,calculatorPosition.y)});
 document.addEventListener('fullscreenchange',()=>requestAnimationFrame(positionCustomerDialogue));
 if(typeof ResizeObserver!=='undefined'){const sceneObserver=new ResizeObserver(()=>requestAnimationFrame(positionCustomerDialogue));const scene=document.querySelector('.store-scene');if(scene)sceneObserver.observe(scene);sceneObserver.observe($('speech'));}
 
+function ensureUpdatePrompt(){
+ if(updatePrompt)return updatePrompt;
+ updatePrompt=document.createElement('button');
+ updatePrompt.type='button';
+ updatePrompt.className='update-prompt';
+ updatePrompt.hidden=true;
+ updatePrompt.innerHTML=`<span>${icon('spark')}</span><b>Kemas kini baru tersedia</b><small>Tekan untuk muat semula game</small>`;
+ updatePrompt.onclick=()=>applyRemoteUpdate();
+ document.body.append(updatePrompt);
+ return updatePrompt;
+}
+function showUpdatePrompt(version='baru'){const el=ensureUpdatePrompt();el.hidden=false;el.dataset.version=version;toast('Versi baru game dikesan. Tekan notis untuk refresh.')}
+function hideUpdatePrompt(){if(updatePrompt)updatePrompt.hidden=true}
+function applyRemoteUpdate(){hideUpdatePrompt();const url=new URL(window.location.href);url.searchParams.set('refresh',String(Date.now()));window.location.replace(url.toString())}
+async function checkForRemoteUpdate(force=false){
+ try{
+  const res=await fetch(`${UPDATE_CHECK_URL}?t=${Date.now()}`,{cache:'no-store'});
+  if(!res.ok)return;
+  const data=await res.json();
+  if(data?.version&&data.version!==APP_BUILD)showUpdatePrompt(data.version);
+  else if(force)hideUpdatePrompt();
+ }catch{}
+}
+function startUpdateChecker(){checkForRemoteUpdate(true);clearInterval(updateCheckTimer);updateCheckTimer=setInterval(checkForRemoteUpdate,60000)}
+
 // Cloud login opens over the existing start screen. The game stays usable offline.
 cloud.start();
+startUpdateChecker();
