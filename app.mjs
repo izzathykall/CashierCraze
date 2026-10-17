@@ -1,4 +1,4 @@
-import {PRODUCTS,PEOPLE,UPGRADES,DENOMS,money,itemPrice,basketTotal,amountDue,dayTarget,createProgress,restoreProgress,makeCustomer,tipFor,buyUpgrade,netTotal,applyCoupon,dailyMissions,claimMission,calculateExpression,CATEGORIES,availableProducts,unlockCategory,randomManualCode,dayFinished,changeParts,machineTimings,availablePaymentMethods,tenderFor,ensureOperations,stockQuote,buyStock,MAX_STOCK_PURCHASE,LOW_STOCK_UNITS,stockForBasket,takeStock,stockUnits,stockTarget,stockCost,payStoreCost,receiveStoreCash,ensureShift,loseStar,settleShift,arrivalWait,clockText,customerLine,PAPER_PACK,PAPER_COST,CARD_REPAIR_COST,cardRepairCost,returnPolicy,returnMatches} from './engine.mjs';
+import {PRODUCTS,PEOPLE,UPGRADES,DENOMS,money,itemPrice,basketTotal,amountDue,dayTarget,createProgress,restoreProgress,makeCustomer,tipFor,buyUpgrade,netTotal,applyCoupon,dailyMissions,claimMission,calculateExpression,CATEGORIES,availableProducts,unlockCategory,randomManualCode,dayFinished,changeParts,machineTimings,availablePaymentMethods,tenderFor,ensureOperations,stockQuote,buyStock,MAX_STOCK_PURCHASE,LOW_STOCK_UNITS,stockForBasket,takeStock,stockUnits,stockTarget,stockCost,wholesaleChange,payStoreCost,receiveStoreCash,ensureShift,loseStar,settleShift,arrivalWait,clockText,customerLine,PAPER_PACK,PAPER_COST,CARD_REPAIR_COST,cardRepairCost,returnPolicy,returnMatches} from './engine.mjs';
 import {productArt,moneyArt} from './art.mjs';
 import {createCloudSync} from './cloud.mjs?v=2026-10-17-pos-v5-3';
 
@@ -14,7 +14,7 @@ let paymentMinimized=false,musicUnlocked=false,musicLevel=0,musicTarget=-1,music
 let calculatorPosition=null,calculatorDrag=null,musicStarting=false,musicGain=null,musicSource=null,chaChingBuffer=null,chaChingPromise=null,chaChingSource=null;
 let renderedBasket=null,renderedSceneCustomer=undefined,selectedCodeItem=null,calculatorInput='',calculatorResult='',advancePending=false;
 const STORAGE='kedai-kita-v1';
-const APP_BUILD=window.__KEDAI_ACTIVE_VERSION__||'2026-10-17-pos-v5-3';
+const APP_BUILD=window.__KEDAI_ACTIVE_VERSION__||'2026-10-18-inventory-market-2';
 const UPDATE_CHECK_URL='./version.json';
 let storageOK=true,progress=createProgress(),session=null,phase='scan',customer=null,mode='career',combo=0,busy=false,paused=true,modalKind='intro',cashPicked=[],lastTip=0,lastEarned=0,toastTimer,audioCtx,scannerBuffer=null,scannerBufferPromise=null,scannerSource=null,sound=true,drag=null,scanToken=0;
 let updatePrompt=null,updateCheckTimer=null;
@@ -131,7 +131,7 @@ function completePayment(transaction=customer){
  if(!ensurePaper())return;if(mode!=='practice'&&!stockForBasket(progress,transaction.items)){showInventory();toast('Stok tidak cukup. Tambah bekalan untuk selesaikan jualan.',true);return}
  ensureShift(session);const missedCoupon=transaction.hasCoupon&&!transaction.couponApplied,reason=missedCoupon?'Kupon diminta tetapi tidak digunakan.':'';
  const starLost=missedCoupon?loseStar(session,reason):0;transaction.paid=true;busy=false;phase='success';combo++;session.bestCombo=Math.max(session.bestCombo,combo);
- lastTip=missedCoupon?0:tipFor(customer,combo,progress.upgrades);const cost=transaction.items.reduce((n,p)=>n+stockCost(p,stockUnits(p)),0);lastEarned=amountDue(transaction)-cost+lastTip;
+ lastTip=missedCoupon?0:tipFor(customer,combo,progress.upgrades);const cost=transaction.items.reduce((n,p)=>n+stockCost(p,stockUnits(p),progress.day),0);lastEarned=amountDue(transaction)-cost+lastTip;
  session.served++;if(transaction.method==='cash'&&!transaction.cashMistakes&&!transaction.overpaid)session.perfectCash=(session.perfectCash||0)+1;session.totalSales+=amountDue(transaction);session.tips+=lastTip;session.earned+=lastEarned;session.overpaid+=transaction.overpaid||0;
  if(mode==='career'){takeStock(progress,transaction.items);progress.paper--;receiveStoreCash(progress,amountDue(transaction)+lastTip);progress.lifetime+=lastEarned;progress.bestCombo=Math.max(progress.bestCombo,combo);recordSale(transaction);if(transaction.method==='card'){progress.cardHealth=Math.max(0,progress.cardHealth-20);progress.cardBroken=progress.cardHealth===0}}
  session.clockMinutes=Math.min(1320,session.clockMinutes+90);render();save();if(transaction.method==='cash')playChaChing();else beep('success');floatingTip(lastTip);if(combo%3===0)confetti(24);
@@ -154,7 +154,7 @@ function restoreCareer(){practiceStore=null;scanToken++;busy=false;advancePendin
 function showShop(returnTo='game'){
  if(mode==='practice'){toast('Semua kategori dibuka untuk latihan. Upgrade tersedia dalam kerjaya.');return}
  const destination=returnTo==='summary'||modalKind==='summary'?'summary':'game';
- openModal('shop',`<div class="modal-pad"><div class="modal-heading"><div><div class="modal-kicker">KEMBANGKAN PASAR MINI ANDA</div><h2>Upgrade & kategori.</h2></div><button class="icon-btn" id="closeShop" aria-label="Tutup">${icon('close')}</button></div><div class="shop-wallet"><small>Duit kedai anda</small><b>${money(progress.wallet)}</b></div><h3 class="shop-section-title">Buka kelas barangan</h3><p class="muted">Barang kategori baharu mula muncul pada pelanggan seterusnya. Pembelian kekal untuk hari-hari berikutnya.</p><div class="category-shop">${CATEGORIES.map(c=>{const owned=progress.unlocked.includes(c.id),count=PRODUCTS.filter(p=>p.category===c.id).length;return `<div class="category-card ${owned?'owned':''}"><div class="category-art">${productArt(c.art)}<span>${count} barang</span></div><div><h3>${c.name}</h3><p>${c.description}</p></div><button data-category="${c.id}" class="secondary-btn" ${owned||progress.wallet<c.cost?'disabled':''}>${owned?'✓ Dibuka':money(c.cost)}</button></div>`}).join('')}</div>${paymentUpgradeCards()}<h3 class="shop-section-title">Peralatan kedai</h3>${UPGRADES.filter(u=>u.type!=='payment').map(u=>{const level=progress.upgrades[u.id]||0,cost=u.cost*(level+1),maxed=level>=u.max;return `<div class="upgrade-row"><span class="upgrade-icon">${icon(u.icon)}</span><div class="upgrade-info"><b>${u.name}</b><span class="level-dots">${'●'.repeat(level)+'○'.repeat(u.max-level)}</span><small>${u.desc}${machineUpgradeInfo(u.id,level,u.max)}</small></div><button class="primary-btn" data-upgrade="${u.id}" ${maxed||progress.wallet<cost?'disabled':''}>${maxed?'Maksimum':money(cost)}</button></div>`}).join('')}<button class="secondary-btn" id="backFromShop" style="width:100%;margin-top:15px">${destination==='summary'?'Kembali ke laporan':'Kembali ke kaunter'}</button></div>`);
+ openModal('shop',`<div class="modal-pad"><div class="modal-heading"><div><div class="modal-kicker">KEMBANGKAN PASAR MINI ANDA</div><h2>Upgrade & kategori.</h2></div><button class="icon-btn" id="closeShop" aria-label="Tutup">${icon('close')}</button></div><div class="shop-wallet"><small>Duit kedai anda</small><b>${money(progress.wallet)}</b></div><h3 class="shop-section-title">Buka kelas barangan</h3><p class="muted">Barang kategori baharu mula muncul pada pelanggan seterusnya. Pembelian kekal untuk hari-hari berikutnya.</p><div class="category-shop">${CATEGORIES.map(c=>{const owned=progress.unlocked.includes(c.id),count=PRODUCTS.filter(p=>p.category===c.id).length;return `<div class="category-card ${owned?'owned':''}"><div class="category-art">${productArt(c.art)}<span>${count} barang</span></div><div><h3>${c.name}</h3><p>Kelas ini mengandungi ${count} jenis barangan. ${owned?'Semua barangan sudah tersedia.':'Buka kelas untuk menjual barangan ini.'}</p></div><button data-category="${c.id}" class="secondary-btn" ${owned||progress.wallet<c.cost?'disabled':''}>${owned?'✓ Dibuka':money(c.cost)}</button><details class="category-products-preview"><summary>${owned?'Lihat senarai barangan':'Preview barangan terkunci'} (${count})</summary><div class="category-preview-items">${PRODUCTS.filter(p=>p.category===c.id).map(p=>`<div class="category-preview-item">${productArt(p.id)}<span><b>${p.name}</b><small>${money(p.price)}${p.weighted?'/kg':''}</small></span></div>`).join('')}</div></details></div>`}).join('')}</div>${paymentUpgradeCards()}<h3 class="shop-section-title">Peralatan kedai</h3>${UPGRADES.filter(u=>u.type!=='payment').map(u=>{const level=progress.upgrades[u.id]||0,cost=u.cost*(level+1),maxed=level>=u.max;return `<div class="upgrade-row"><span class="upgrade-icon">${icon(u.icon)}</span><div class="upgrade-info"><b>${u.name}</b><span class="level-dots">${'●'.repeat(level)+'○'.repeat(u.max-level)}</span><small>${u.desc}${machineUpgradeInfo(u.id,level,u.max)}</small></div><button class="primary-btn" data-upgrade="${u.id}" ${maxed||progress.wallet<cost?'disabled':''}>${maxed?'Maksimum':money(cost)}</button></div>`}).join('')}<button class="secondary-btn" id="backFromShop" style="width:100%;margin-top:15px">${destination==='summary'?'Kembali ke laporan':'Kembali ke kaunter'}</button></div>`);
  const back=()=>destination==='summary'?showSummary():closeModal();$('closeShop').onclick=back;$('backFromShop').onclick=back;
  $('modalContent').querySelectorAll('[data-upgrade]').forEach(b=>b.onclick=()=>{if(buyUpgrade(progress,b.dataset.upgrade)){if(b.dataset.upgrade==='comfort'&&customer)customer.patience+=15;save();renderHeader();beep('success');showShop(destination);if(['card','qr'].includes(b.dataset.upgrade))toast('Bayaran '+(b.dataset.upgrade==='card'?'kad':'QR')+' dibuka untuk pelanggan seterusnya!')}});
  $('modalContent').querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{if(unlockCategory(progress,b.dataset.category)){save();renderHeader();initIllustrations();showShop(destination);beep('success');confetti(18);toast('Kategori '+CATEGORIES.find(c=>c.id===b.dataset.category).name+' dibuka!')}});
@@ -342,7 +342,7 @@ function renderCardTerminal(){
  customer.cardTheme??=themes[Math.floor(Math.random()*themes.length)];
  const holder=(customer.person?.name||'Pelanggan').toUpperCase();
  const helper=pin?'Masukkan 4 digit PIN dan tekan OK':working?'Sila tunggu pengesahan terminal':customer.requiresPin?'Sentuh kad pada terminal. Kemudian masukkan PIN':'Sentuh kad pada terminal';
- $('paymentArea').innerHTML=`<div id="payDevice" class="payment-scene modern-card-scene stage-${stage}"><div class="terminal-v2"><div class="terminal-v2-top"></div><div class="contact-reader" id="cardReaderTarget"><span class="reader-icon" aria-hidden="true"></span><small>SENTUH KAD PADA TERMINAL</small></div><div class="terminal-v2-screen-frame"><div class="terminal-v2-screen"><small>${pin?'MASUKKAN PIN':working?'SEDANG MEMPROSES':'TERMINAL SEDIA'}</small><b>${pin?('●'.repeat(customer.pinInput.length)||'_ _ _ _'):money(amountDue(customer))}</b><span>${helper}</span></div></div><div class="terminal-v2-keys">${keys.map(k=>`<button type="button" data-terminal-pin="${k}" class="${k==='OK'?'pin-ok':k==='⌫'?'pin-clear':''}" ${pin?'':'disabled'} aria-label="${k==='⌫'?'Padam':k==='OK'?'Sahkan PIN':k}">${k}</button>`).join('')}</div></div><button class="payment-bankcard ${customer.cardTheme}" id="swipeCard" ${working||pin?'disabled':''} aria-label="${action}"><span class="bank-name">KITA BANK</span><span class="card-motif" aria-hidden="true"></span><i class="card-chip"></i><span class="card-wave" aria-hidden="true">))))</span><b>4826 2026 1234 5678</b><small>${holder}</small><em>12/26</em><strong class="card-brand">mc</strong></button><span class="terminal-action-label">${pin?'Masukkan 4 digit PIN pada terminal':working?'Kad sedang dibaca…':'Sentuh kad pada terminal'}</span></div>${pin?`<div class="card-pin-guide"><small>PIN pelanggan</small><strong>${customer.cardPin}</strong><span id="pinError" class="code-error">${customer.pinError||''}</span></div>`:`<div class="card-drag-instruction">${customer.requiresPin?'Sentuh kad pada terminal. Selepas itu masukkan PIN pelanggan.':'Sentuh kad pada terminal untuk lengkapkan pembayaran.'}</div>`}`;
+ $('paymentArea').innerHTML=`<div id="payDevice" class="payment-scene modern-card-scene stage-${stage}"><div class="terminal-v2"><div class="terminal-v2-top"></div><div class="contact-reader" id="cardReaderTarget"><span class="reader-icon" aria-hidden="true"></span><small>SENTUH KAD PADA TERMINAL</small></div><div class="terminal-v2-screen-frame"><div class="terminal-v2-screen"><small>${pin?'MASUKKAN PIN':working?'SEDANG MEMPROSES':'TERMINAL SEDIA'}</small><b>${pin?('●'.repeat(customer.pinInput.length)||'_ _ _ _'):money(amountDue(customer))}</b><span>${helper}</span></div></div><div class="terminal-v2-keys">${keys.map(k=>`<button type="button" data-terminal-pin="${k}" class="${k==='OK'?'pin-ok':k==='⌫'?'pin-clear':''}" ${pin?'':'disabled'} aria-label="${k==='⌫'?'Padam':k==='OK'?'Sahkan PIN':k}">${k}</button>`).join('')}</div></div><button class="payment-bankcard ${customer.cardTheme}" id="swipeCard" ${working||pin?'disabled':''} aria-label="${action}"><span class="bank-name">KITA BANK</span><span class="card-motif" aria-hidden="true"></span><i class="card-chip"></i><span class="card-wave" aria-hidden="true">))))</span><b class="card-number">4826 2026 1234 5678</b><em class="card-expiry">12/26</em><small class="card-holder">${holder}</small><strong class="card-brand">mc</strong></button><span class="terminal-action-label">${pin?'Masukkan 4 digit PIN pada terminal':working?'Kad sedang dibaca…':'Sentuh kad pada terminal'}</span></div>${pin?`<div class="card-pin-guide"><small>PIN pelanggan</small><strong>${customer.cardPin}</strong><span id="pinError" class="code-error">${customer.pinError||''}</span></div>`:`<div class="card-drag-instruction">${customer.requiresPin?'Sentuh kad pada terminal. Selepas itu masukkan PIN pelanggan.':'Sentuh kad pada terminal untuk lengkapkan pembayaran.'}</div>`}`;
  if(pin){setCardPose();$('paymentArea').querySelectorAll('[data-terminal-pin]').forEach(b=>b.onclick=()=>pressPin(b.dataset.terminalPin));return}
  if(working)setCardPose();else bindBankCardDrag();
 }
@@ -524,44 +524,97 @@ function renderWaiting(){
  const area=$('paymentArea'),key=phase+(progress.paper===0?'paper':'stock');if(area.dataset.waitKey!==key){area.dataset.waitKey=key;area.innerHTML=`<div class="waiting-counter">${icon(phase==='supply'?'basket':'clock')}<h3>${phase==='supply'?(progress.paper===0?'Kertas resit habis':'Stok kedai habis'):'Kaunter lapang seketika'}</h3><p>${phase==='supply'?'Tambah bekalan sebelum pelanggan seterusnya boleh dilayan.':'Dah lewat. Pelanggan datang lebih perlahan.'}</p><button class="secondary-btn" id="waitingInventory">Buka inventori</button></div>`;$('waitingInventory').onclick=()=>showInventory()}
 
 }
+function inventorySelectedFilter(){return $('inventoryStateFilter')?.value||'all'}
+function inventoryStateFor(product,store){
+ const amount=store.inventory[product.id]||0,unit=product.weighted?1000:1;
+ return amount<=0?'empty':amount<LOW_STOCK_UNITS*unit?'low':'good';
+}
+function bindInventoryControls(){
+ const content=$('modalContent');
+ content.querySelectorAll('[data-restock]').forEach(b=>b.onclick=()=>{
+  const input=content.querySelector(`[data-stock-qty="${b.dataset.restock}"]`),amount=Number(input?.value);
+  if(!Number.isInteger(amount)||amount<1||amount>MAX_STOCK_PURCHASE){toast('Pilih kuantiti 1–20 sahaja.',true);return}
+  confirmSupply('stock',b.dataset.restock,inventoryDestination,amount);
+ });
+ content.querySelectorAll('[data-stock-qty]').forEach(input=>{
+  const card=input.closest('.stock-card'),minus=card.querySelector('[data-stock-minus]'),plus=card.querySelector('[data-stock-plus]'),buy=card.querySelector('[data-restock]');
+  const update=()=>{
+   const amount=Number(input.value),valid=Number.isInteger(amount)&&amount>=1&&amount<=MAX_STOCK_PURCHASE;
+   minus.disabled=!valid||amount<=1;plus.disabled=!valid||amount>=MAX_STOCK_PURCHASE;
+   buy.disabled=mode==='practice'||!valid;
+   const product=PRODUCTS.find(p=>p.id===input.dataset.stockQty);
+   const qty=amount*(product.weighted?1000:1);
+   buy.textContent=valid?'Beli '+amount+(product.weighted?' kg':' unit')+' · '+money(stockCost(product,qty,operatingStore().day)):'Masukkan 1–20';
+  };
+  minus.onclick=()=>{input.value=Math.max(1,Number(input.value||1)-1);update()};
+  plus.onclick=()=>{input.value=Math.min(MAX_STOCK_PURCHASE,Number(input.value||0)+1);update()};
+  input.oninput=update;
+  input.onchange=()=>{input.value=String(Math.max(1,Math.min(MAX_STOCK_PURCHASE,Math.trunc(Number(input.value)||1))));update()};
+  update();
+ });
+}
+let inventoryDestination='game';
 function showInventory(returnTo='game'){
- if(!session||modalKind==='intro')return;const store=operatingStore(),quote=stockQuote(store),destination=returnTo==='summary'||modalKind==='summary'?'summary':'game';
+ if(!session||modalKind==='intro')return;
+ const store=operatingStore(),quote=stockQuote(store);
+ inventoryDestination=returnTo==='summary'||modalKind==='summary'?'summary':'game';
+ const destination=inventoryDestination;
  const back=()=>{if(destination==='summary'){showSummary();return}closeModal();if(phase==='supply'&&readyForCustomer())newCustomer()};
- openModal('inventory',`<div class="modal-pad inventory-panel"><div class="modal-heading"><div><div class="modal-kicker">STOK & PENYELENGGARAAN</div><h2>Inventori kedai.</h2></div><button class="icon-btn" id="closeInventory" aria-label="Tutup">${icon('close')}</button></div><div class="inventory-money"><span>Duit kedai <b>${money(store.wallet)}</b></span><span>Hutang pembekal <b>${money(store.supplierDebt)}</b></span></div><p class="muted">Pilih sendiri 1 hingga 20 unit untuk setiap pembelian (barang timbang dalam kg). Stok rendah apabila baki kurang 5 unit/kg; stok habis apabila kosong. Harga borong 82% harga jualan.</p><button class="primary-btn" id="restockAll" ${!quote.lines.length||mode==='practice'?'disabled':''}>Tambah semua stok · ${money(quote.total)}</button><p class="inventory-credit">Jika duit tidak cukup, anda boleh sahkan pembelian secara hutang. 30% kutipan jualan seterusnya digunakan untuk membayarnya.</p><div class="supply-cards"><div><b>Kertas resit</b><strong>${store.paper} helai</strong><small>Satu helai bagi setiap jualan atau pulangan.</small><button class="secondary-btn" id="buyPaper">Beli ${PAPER_PACK} helai · ${money(PAPER_COST)}</button></div><div><b>Terminal kad</b><strong>${store.cardBroken?'Rosak':store.cardHealth+'% keadaan'}</strong><small>Rosak selepas haus atau gangguan rawak. Bayaran kad disekat sehingga dibaiki.</small><button class="secondary-btn" id="repairTerminal" ${!cardRepairCost(store)?'disabled':''}>Baiki · ${money(cardRepairCost(operatingStore()))}</button></div></div><div class="inventory-toolbar"><input id="inventorySearch" type="search" placeholder="Cari nama barang…" aria-label="Cari inventori"><label><input type="checkbox" id="lowStockOnly"> Stok rendah sahaja</label><button class="secondary-btn" id="foldStock">Lipat semua</button></div><div class="inventory-list" id="inventoryGroups">${inventoryGroupsHTML(store)}</div><button class="secondary-btn" id="backInventory">${destination==='summary'?'Kembali ke laporan':'Kembali ke kaunter'}</button></div>`);
- $('inventorySearch').oninput=filterInventory;$('lowStockOnly').onchange=filterInventory;$('foldStock').onclick=()=>{$('modalContent').querySelectorAll('[data-stock-category]').forEach(el=>el.open=false)};
+ openModal('inventory',`<div class="modal-pad inventory-panel"><div class="modal-heading"><div><div class="modal-kicker">STOK & PENYELENGGARAAN</div><h2>Inventori kedai.</h2></div><button class="icon-btn" id="closeInventory" aria-label="Tutup">${icon('close')}</button></div><div class="inventory-money"><span>Duit kedai <b id="inventoryWallet">${money(store.wallet)}</b></span><span>Hutang pembekal <b id="inventoryDebt">${money(store.supplierDebt)}</b></span></div><p class="muted">Pilih 1–20 unit untuk setiap pembelian (barang timbang dalam kg). Harga borong berubah mengikut hari permainan dan kekal sepanjang hari tersebut.</p><button class="primary-btn" id="restockAll" ${!quote.lines.length||mode==='practice'?'disabled':''}>Tambah semua stok · ${money(quote.total)}</button><p class="inventory-credit">Jika duit tidak cukup, anda boleh sahkan pembelian secara hutang. 30% kutipan jualan seterusnya digunakan untuk membayarnya.</p><div class="supply-cards"><div><b>Kertas resit</b><strong id="inventoryPaper">${store.paper} helai</strong><small>Satu helai bagi setiap jualan atau pulangan.</small><button class="secondary-btn" id="buyPaper">Beli ${PAPER_PACK} helai · ${money(PAPER_COST)}</button></div><div><b>Terminal kad</b><strong id="inventoryTerminal">${store.cardBroken?'Rosak':store.cardHealth+'% keadaan'}</strong><small>Rosak selepas haus atau gangguan rawak. Bayaran kad disekat sehingga dibaiki.</small><button class="secondary-btn" id="repairTerminal" ${!cardRepairCost(store)?'disabled':''}>Baiki · ${money(cardRepairCost(store))}</button></div></div><div class="inventory-toolbar"><input id="inventorySearch" type="search" placeholder="Cari nama barang…" aria-label="Cari inventori"><label for="inventoryStateFilter">Tapis stok</label><select id="inventoryStateFilter" aria-label="Tapis stok mengikut tahap"><option value="all">Semua stok</option><option value="empty">Stok habis (0)</option><option value="low">Stok rendah (1–4)</option><option value="good">Stok mencukupi (5+)</option></select><button class="secondary-btn" id="foldStock">Lipat semua</button></div><div class="inventory-list" id="inventoryGroups">${inventoryGroupsHTML(store)}</div><button class="secondary-btn" id="backInventory">${destination==='summary'?'Kembali ke laporan':'Kembali ke kaunter'}</button></div><div class="inventory-confirm-layer" id="inventoryConfirmLayer" hidden></div>`);
+ $('inventorySearch').oninput=filterInventory;
+ $('inventoryStateFilter').onchange=filterInventory;
+ $('foldStock').onclick=()=>{$('modalContent').querySelectorAll('[data-stock-category]').forEach(el=>el.open=false)};
  $('closeInventory').onclick=back;$('backInventory').onclick=back;
- $('restockAll').onclick=()=>confirmSupply('stock',null,destination);$('buyPaper').onclick=()=>confirmSupply('paper',null,destination);$('repairTerminal').onclick=()=>confirmSupply('repair',null,destination);
- $('modalContent').querySelectorAll('[data-restock]').forEach(b=>b.onclick=()=>{
-   const input=$('modalContent').querySelector(`[data-stock-qty="${b.dataset.restock}"]`);
-   const amount=Number(input?.value);
-   if(!Number.isInteger(amount)||amount<1||amount>MAX_STOCK_PURCHASE){toast('Pilih kuantiti 1–20 sahaja.',true);return}
-   confirmSupply('stock',b.dataset.restock,destination,amount);
- });
- $('modalContent').querySelectorAll('[data-stock-qty]').forEach(input=>{
-   const card=input.closest('.stock-card'),minus=card.querySelector('[data-stock-minus]'),plus=card.querySelector('[data-stock-plus]'),buy=card.querySelector('[data-restock]');
-   const update=()=>{
-     const amount=Number(input.value),valid=Number.isInteger(amount)&&amount>=1&&amount<=MAX_STOCK_PURCHASE;
-     minus.disabled=!valid||amount<=1;plus.disabled=!valid||amount>=MAX_STOCK_PURCHASE;
-     buy.disabled=mode==='practice'||!valid;
-     const product=PRODUCTS.find(x=>x.id===input.dataset.stockQty);
-     buy.textContent=valid?'Beli '+amount+(product.weighted?' kg':' unit')+' · '+money(stockCost(product,amount*(product.weighted?1000:1))):'Masukkan 1–20';
-   };
-   minus.onclick=()=>{input.value=Math.max(1,Number(input.value||1)-1);update()};
-   plus.onclick=()=>{input.value=Math.min(MAX_STOCK_PURCHASE,Number(input.value||0)+1);update()};
-   input.oninput=update;
-   input.onchange=()=>{input.value=String(Math.max(1,Math.min(MAX_STOCK_PURCHASE,Math.trunc(Number(input.value)||1))));update()};
-   update();
- });
+ $('restockAll').onclick=()=>confirmSupply('stock',null,destination);
+ $('buyPaper').onclick=()=>confirmSupply('paper',null,destination);
+ $('repairTerminal').onclick=()=>confirmSupply('repair',null,destination);
+ bindInventoryControls();
+}
+function refreshInventoryInPlace(){
+ const store=operatingStore(),list=$('inventoryGroups');if(!list)return;
+ const scrollTop=list.scrollTop,modalScroll=$('modal').scrollTop,contentScroll=$('modalContent').scrollTop,filter=$('inventoryStateFilter').value,search=$('inventorySearch').value;
+ const openCategories=new Set([...list.querySelectorAll('[data-stock-category][open]')].map(x=>x.dataset.stockCategory));
+ // Update the displayed inventory without recreating the dialog itself.
+ list.innerHTML=inventoryGroupsHTML(store);
+ list.querySelectorAll('[data-stock-category]').forEach(group=>group.open=openCategories.has(group.dataset.stockCategory));
+ $('inventoryStateFilter').value=filter;$('inventorySearch').value=search;
+ $('inventoryWallet').textContent=money(store.wallet);$('inventoryDebt').textContent=money(store.supplierDebt);
+ $('inventoryPaper').textContent=store.paper+' helai';$('inventoryTerminal').textContent=store.cardBroken?'Rosak':store.cardHealth+'% keadaan';
+ const quote=stockQuote(store),restock=$('restockAll');restock.textContent='Tambah semua stok · '+money(quote.total);restock.disabled=!quote.lines.length||mode==='practice';
+ const repair=$('repairTerminal');repair.disabled=!cardRepairCost(store);repair.textContent='Baiki · '+money(cardRepairCost(store));
+ bindInventoryControls();filterInventory();list.scrollTop=scrollTop;
+ $('modal').scrollTop=modalScroll;$('modalContent').scrollTop=contentScroll;
+ requestAnimationFrame(()=>{if($('inventoryGroups')===list){list.scrollTop=scrollTop;$('modal').scrollTop=modalScroll;$('modalContent').scrollTop=contentScroll}});
 }
 function confirmSupply(type,id=null,destination='game',units=null){
  const store=operatingStore(),quote=type==='stock'?stockQuote(store,id,units):null,cost=quote?quote.total:type==='paper'?PAPER_COST:cardRepairCost(store);
- if(!cost||(type==='repair'&&!cardRepairCost(store)))return;const credit=store.wallet<cost,shortfall=Math.max(0,cost-store.wallet);
+ if(!cost||(type==='repair'&&!cardRepairCost(store)))return;
+ const credit=store.wallet<cost,shortfall=Math.max(0,cost-store.wallet);
  const description=type==='stock'?quote.lines.map(x=>`${x.name}: +${x.weighted?(x.quantity/1000).toFixed(2)+' kg':x.quantity+' unit'}`).join('<br>'):type==='paper'?`${PAPER_PACK} helai kertas resit`:'Pembaikan terminal kad sehingga 100%';
- openModal('supply-confirm',`<div class="modal-pad supply-confirm"><div class="modal-kicker">SEMAK SEBELUM MEMBELI</div><h2>Sahkan ${type==='stock'?'tambah stok':type==='paper'?'kertas resit':'pembaikan'}?</h2><div class="supply-confirm-lines">${description}</div><div class="supply-confirm-total"><span>Jumlah kos</span><strong>${money(cost)}</strong></div><p>${credit?'Duit tidak cukup. '+money(Math.max(0,store.wallet))+' dibayar sekarang dan '+money(shortfall)+' ditambah kepada hutang pembekal.':'Kos ini akan ditolak daripada duit kedai.'}</p><button class="primary-btn" id="confirmSupply">${credit?'Sahkan pembelian + hutang':'Sahkan pembelian'} · ${money(cost)}</button><button class="secondary-btn" id="cancelSupply">Batal</button></div>`);
- $('cancelSupply').onclick=()=>showInventory(destination);let confirmed=false;
- $('confirmSupply').onclick=()=>{if(confirmed)return;const ok=type==='stock'?buyStock(store,quote,credit):payStoreCost(store,cost,credit);if(!ok){toast('Inventori berubah. Semak semula jumlah pembelian.',true);showInventory(destination);return}confirmed=true;
- if(type==='paper')store.paper+=PAPER_PACK;if(type==='repair'){store.cardBroken=false;store.cardHealth=100;if(customer)customer.cardFailure=false}if(type!=='stock'){session.expenses+=cost;session.earned-=cost;if(mode==='career')progress.lifetime-=cost}
- save();renderHeader();renderPayment();showInventory(destination);beep('success');toast(type==='repair'?'Terminal kad siap dibaiki.':type==='paper'?'Kertas resit ditambah.':'Stok kedai ditambah.');
+ const confirmHTML=`<div class="inventory-confirm-box" role="alertdialog" aria-labelledby="inventoryConfirmHeading" aria-modal="true"><div class="modal-kicker">SEMAK SEBELUM MEMBELI</div><h2 id="inventoryConfirmHeading">Sahkan ${type==='stock'?'tambah stok':type==='paper'?'kertas resit':'pembaikan'}?</h2><div class="supply-confirm-lines">${description}</div><div class="supply-confirm-total"><span>Jumlah kos</span><strong>${money(cost)}</strong></div><p>${credit?'Duit tidak cukup. '+money(store.wallet)+' dibayar sekarang dan '+money(shortfall)+' ditambah kepada hutang pembekal.':'Kos ini akan ditolak daripada duit kedai.'}</p><button class="primary-btn" id="confirmSupply">${credit?'Sahkan pembelian + hutang':'Sahkan pembelian'} · ${money(cost)}</button><button class="secondary-btn" id="cancelSupply">Batal</button></div>`;
+ // The existing inventory modal remains open and its scroll state is unchanged.
+ const layer=$('inventoryConfirmLayer');
+ if(layer&&modalKind==='inventory'){
+  layer.innerHTML=confirmHTML;layer.hidden=false;
+ }else{
+  openModal('supply-confirm',`<div class="modal-pad supply-confirm">${confirmHTML}</div>`);
+ }
+ const cancel=()=>{if(layer&&modalKind==='inventory'){layer.hidden=true;layer.innerHTML=''}else showInventory(destination)};
+ $('cancelSupply').onclick=cancel;
+ let confirmed=false;
+ $('confirmSupply').onclick=()=>{
+  if(confirmed)return;
+  const ok=type==='stock'?buyStock(store,quote,credit):payStoreCost(store,cost,credit);
+  if(!ok){toast('Inventori berubah. Semak semula jumlah pembelian.',true);cancel();return}
+  confirmed=true;
+  if(type==='paper')store.paper+=PAPER_PACK;
+  if(type==='repair'){store.cardBroken=false;store.cardHealth=100;if(customer)customer.cardFailure=false}
+  if(type!=='stock'){session.expenses+=cost;session.earned-=cost;if(mode==='career')progress.lifetime-=cost}
+  save();renderHeader();renderPayment();
+  if(layer&&modalKind==='inventory'){
+   layer.hidden=true;layer.innerHTML='';refreshInventoryInPlace();
+  }else showInventory(destination);
+  beep('success');toast(type==='repair'?'Terminal kad siap dibaiki.':type==='paper'?'Kertas resit ditambah.':'Stok kedai ditambah.');
  };
 }
 function renderCardRepair(){
@@ -570,7 +623,7 @@ function renderCardRepair(){
 }
 function recordSale(transaction){
  const seq=++progress.saleSequence,total=amountDue(transaction);let allocated=0;
- transaction.items.forEach((p,i)=>{const paid=i===transaction.items.length-1?total-allocated:Math.floor(total*itemPrice(p)/Math.max(1,transaction.total));allocated+=paid;progress.sales.push({id:progress.day+'-'+seq+'-'+i,receipt:'KK-'+String(seq).padStart(5,'0'),day:progress.day,productId:p.id,grams:p.grams,paid,cost:stockCost(p,stockUnits(p)),returned:false})});progress.sales=progress.sales.slice(-120);
+ transaction.items.forEach((p,i)=>{const paid=i===transaction.items.length-1?total-allocated:Math.floor(total*itemPrice(p)/Math.max(1,transaction.total));allocated+=paid;progress.sales.push({id:progress.day+'-'+seq+'-'+i,receipt:'KK-'+String(seq).padStart(5,'0'),day:progress.day,productId:p.id,grams:p.grams,paid,cost:stockCost(p,stockUnits(p),progress.day),returned:false})});progress.sales=progress.sales.slice(-120);
 }
 function prepareReturnCustomer(){
  if(mode==='practice'||progress.day<2||session.index<2||(session.index+progress.day)%4!==0)return;
@@ -686,22 +739,28 @@ function bindEffectSettings(){$('modalContent').querySelectorAll('[data-effect]'
 
 function inventoryGroupsHTML(store){
  const all=PRODUCTS.filter(p=>store.unlocked.includes(p.category));
- const isLow=p=>store.inventory[p.id]<(p.weighted?LOW_STOCK_UNITS*1000:LOW_STOCK_UNITS);
  return CATEGORIES.filter(c=>store.unlocked.includes(c.id)).map(c=>{
-  const list=all.filter(p=>p.category===c.id),low=list.filter(isLow).length;
-  return `<details class="stock-category" data-stock-category="${c.id}" open><summary><span>${c.name}</span><small>${list.length} barang${low?' · '+low+' stok rendah/habis':''}</small></summary><div class="stock-grid">${list.map(p=>{
-   const count=store.inventory[p.id],weighted=!!p.weighted,multiplier=weighted?1000:1;
-   const lowStock=isLow(p),empty=count<=0;
-   const toTarget=Math.max(0,stockTarget(p)-count);
-   const units=Math.min(MAX_STOCK_PURCHASE,Math.max(1,Math.ceil(toTarget/multiplier)));
-   const unitLabel=weighted?'kg':'unit';
-   const badge=empty?'<small class="stock-level empty">Stok habis</small>':lowStock?'<small class="stock-level low">Stok rendah</small>':'<small class="stock-level good">Stok mencukupi</small>';
-   return `<article class="stock-card ${lowStock?'low-stock':''}" data-stock-name="${p.name.toLowerCase()}" data-low="${lowStock}">${productArt(p.id)}<div><b>${p.name}</b><span>${weighted?(count/1000).toFixed(2)+' kg':count+' unit'} ${badge}</span><small>Jual ${money(p.price)}${weighted?'/kg':''} · Borong ${money(stockCost(p,multiplier))}/${unitLabel}</small></div><meter min="0" max="20" value="${Math.min(20,count/multiplier)}" aria-label="Stok ${p.name}"></meter><div class="stock-buy-picker"><span>Kuantiti beli (${unitLabel})</span><div class="stock-qty-controls"><button type="button" data-stock-minus="${p.id}" aria-label="Kurangkan kuantiti ${p.name}">−</button><input data-stock-qty="${p.id}" inputmode="numeric" type="number" min="1" max="${MAX_STOCK_PURCHASE}" step="1" value="${units}" aria-label="Kuantiti untuk ${p.name}"><button type="button" data-stock-plus="${p.id}" aria-label="Tambah kuantiti ${p.name}">+</button></div></div><button type="button" class="secondary-btn stock-buy-action" data-restock="${p.id}" ${mode==='practice'?'disabled':''}>Beli ${units} ${unitLabel} · ${money(stockCost(p,units*multiplier))}</button></article>`;
+  const list=all.filter(p=>p.category===c.id),low=list.filter(p=>inventoryStateFor(p,store)!=='good').length;
+  return `<details class="stock-category" data-stock-category="${c.id}" open><summary><span>${c.name}</span><small>${list.length} barang${low?' · '+low+' memerlukan stok':''}</small></summary><div class="stock-grid">${list.map(p=>{
+   const count=store.inventory[p.id]||0,weighted=!!p.weighted,multiplier=weighted?1000:1;
+   const state=inventoryStateFor(p,store),lowStock=state!=='good';
+   const unitLabel=weighted?'kg':'unit',units=1;
+   const delta=wholesaleChange(p,store.day);
+   const trendLabel=store.day<=1?'Harga hari ini':delta>0?'▲ Naik '+delta+'%':delta<0?'▼ Turun '+Math.abs(delta)+'%':'Harga stabil';
+   const badge=state==='empty'?'<small class="stock-level empty">Stok habis</small>':state==='low'?'<small class="stock-level low">Stok rendah</small>':'<small class="stock-level good">Stok mencukupi</small>';
+   return `<article class="stock-card ${lowStock?'low-stock':''}" data-stock-name="${p.name.toLowerCase()}" data-state="${state}">${productArt(p.id)}<div><b>${p.name}</b><span>${weighted?(count/1000).toFixed(2)+' kg':count+' unit'} ${badge}</span><small>Jual ${money(p.price)}${weighted?'/kg':''} · Borong ${money(stockCost(p,multiplier,store.day))}/${unitLabel}</small><small class="wholesale-trend ${delta>0?'up':delta<0?'down':'stable'}">${trendLabel}</small></div><meter min="0" max="20" value="${Math.min(20,count/multiplier)}" aria-label="Stok ${p.name}"></meter><div class="stock-buy-picker"><span>Kuantiti beli (${unitLabel})</span><div class="stock-qty-controls"><button type="button" data-stock-minus="${p.id}" aria-label="Kurangkan kuantiti ${p.name}">−</button><input data-stock-qty="${p.id}" inputmode="numeric" type="number" min="1" max="${MAX_STOCK_PURCHASE}" step="1" value="1" aria-label="Kuantiti untuk ${p.name}"><button type="button" data-stock-plus="${p.id}" aria-label="Tambah kuantiti ${p.name}">+</button></div></div><button type="button" class="secondary-btn stock-buy-action" data-restock="${p.id}" ${mode==='practice'?'disabled':''}>Beli 1 ${unitLabel} · ${money(stockCost(p,multiplier,store.day))}</button></article>`;
   }).join('')}</div></details>`;
  }).join('');
 }
-
-function filterInventory(){const term=$('inventorySearch').value.toLowerCase().trim(),low=$('lowStockOnly').checked;const cards=$('modalContent').querySelectorAll('[data-stock-name]');cards.forEach(el=>el.hidden=!el.dataset.stockName.includes(term)||(low&&el.dataset.low!=='true'));$('modalContent').querySelectorAll('[data-stock-category]').forEach(group=>{group.hidden=![...group.querySelectorAll('[data-stock-name]')].some(el=>!el.hidden);if(term||low)group.open=true})}
+function filterInventory(){
+ const term=$('inventorySearch').value.toLowerCase().trim(),state=inventorySelectedFilter();
+ const cards=$('modalContent').querySelectorAll('[data-stock-name]');
+ cards.forEach(el=>el.hidden=!el.dataset.stockName.includes(term)||(state!=='all'&&el.dataset.state!==state));
+ $('modalContent').querySelectorAll('[data-stock-category]').forEach(group=>{
+  group.hidden=![...group.querySelectorAll('[data-stock-name]')].some(el=>!el.hidden);
+  if(term||state!=='all')group.open=true;
+ });
+}
 
 function renderReturnReceipt(){ensureReturnClaim();const item=customer.items[0],claim=customer.returnClaim,total=item.scanned?(claim?.paid||0):0;$('roundingRow')?.remove();$('discountRow')?.remove();$('receiptQuantity').textContent='('+Number(!!item.scanned)+' barang)';$('receiptNo').textContent=claim?.receipt||'PULANGAN';$('receiptSub').textContent='Amaun dituntut · belum disahkan';$('subtotal').textContent=money(total);$('total').textContent=money(total);$('receiptList').innerHTML=item.scanned?`<div class="receipt-row"><span class="row-emoji">${productArt(item.id)}</span><span class="row-info"><b>${item.name}</b><small>Pemulangan · 1 unit</small></span><strong>${money(total)}</strong></div>`:`<div class="receipt-empty">${icon('undo')}<b>Barang pemulangan belum discan</b><small>Tekan barang di conveyor untuk semak.</small></div>`}
 

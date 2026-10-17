@@ -619,7 +619,20 @@ export function availablePaymentMethods(upgrades={},practice=false){return ['cas
 export const STOCK_TARGET=8, PAPER_PACK=20, PAPER_COST=200, CARD_REPAIR_COST=1200;
 export function stockUnits(p){return p.weighted?p.grams:1}
 export function stockTarget(p){return p.weighted?STOCK_TARGET*1000:STOCK_TARGET}
-export function stockCost(p,quantity){return Math.max(1,Math.round(p.price*.82*quantity/(p.weighted?1000:1)))}
+// Simulated wholesale market: stable within each game day, fluctuates on the next.
+// A small product-specific cycle produces realistic variations without a network dependency.
+export function wholesaleRate(product,day=1){
+ const code=String(product.id||'').split('').reduce((acc,char)=>((acc*31+char.charCodeAt(0))>>>0),2166136261);
+ const date=Math.max(1,Math.floor(Number(day)||1));
+ const seed=Math.imul((code ^ Math.imul(date,2654435761))>>>0,1664525)>>>0;
+ const fluctuation=((seed+1013904223)>>>0)%19-9; // -9 to +9 points, differs by item/day
+ return (82+fluctuation)/100;
+}
+export function wholesaleChange(product,day=1){
+ const today=wholesaleRate(product,day),yesterday=wholesaleRate(product,Math.max(1,day-1));
+ return Math.round((today-yesterday)/yesterday*100);
+}
+export function stockCost(p,quantity,day=1){return Math.max(1,Math.round(p.price*wholesaleRate(p,day)*quantity/(p.weighted?1000:1)))}
 export function ensureOperations(p){
  const fresh=!p.inventory||typeof p.inventory!=='object';p.inventory=fresh?{}:p.inventory;
  for(const item of PRODUCTS){const old=p.inventory[item.id];p.inventory[item.id]=fresh&&p.unlocked.includes(item.category)?stockTarget(item):Math.max(0,Math.floor(Number(old)||0))}
@@ -635,7 +648,7 @@ export function stockQuote(p,id=null,units=null){
  if(manual&&(!id||!Number.isInteger(units)||units<1||units>MAX_STOCK_PURCHASE))return {lines:[],total:0,manual:true};
  const lines=availableProducts(p.unlocked).filter(x=>!id||x.id===id).map(x=>{
   const quantity=manual?units*(x.weighted?1000:1):Math.max(0,stockTarget(x)-p.inventory[x.id]);
-  return {id:x.id,name:x.name,weighted:!!x.weighted,quantity,cost:quantity?stockCost(x,quantity):0};
+  return {id:x.id,name:x.name,weighted:!!x.weighted,quantity,cost:quantity?stockCost(x,quantity,p.day):0};
  }).filter(x=>x.quantity>0);
  return {lines,total:lines.reduce((sum,x)=>sum+x.cost,0),manual};
 }
