@@ -1,51 +1,37 @@
-# Kedai Kita — Firebase Realtime Database Edition
+# Kedai Kita — Firebase Realtime Database (Konfigurasi dipasang)
 
-Versi penuh game Kedai Kita, dengan **Firebase Authentication** (daftar, log masuk, log keluar, lupa kata laluan) dan **Realtime Database** (simpan & muat progres mengikut UID pemain).
+Projek Firebase yang digunakan: `kedaikita-60c28`
 
-## Langkah aktifkan Cloud Save
+Realtime Database: `https://kedaikita-60c28-default-rtdb.asia-southeast1.firebasedatabase.app`
 
-1. Buka https://console.firebase.google.com/ dan pilih atau cipta projek Firebase.
-2. Pergi ke **Project settings > Your apps > Web** dan daftar web app untuk dapat objek `firebaseConfig`.
-3. Pergi ke **Build > Authentication > Sign-in method**, aktifkan **Email/Password**. Dalam **Settings > Authorized domains** tambah domain tempat game diterbitkan, jika perlu.
-4. Pergi ke **Build > Realtime Database > Create database**, pilih lokasi, kemudian dapatkan URL pangkalan data (contoh: `https://PROJECT-ID-default-rtdb.asia-southeast1.firebasedatabase.app` atau `https://PROJECT-ID-default-rtdb.firebaseio.com`).
-5. Dalam `firebase-config.js`, isikan **apiKey**, **authDomain**, **projectId**, **appId**, **messagingSenderId**, serta **databaseURL** sebenar yang dipaparkan dalam Realtime Database. Jangan guna URL contoh secara literal. Jangan kongsi kata laluan atau private key.
-6. Dalam **Realtime Database > Rules**, salin kandungan `database.rules.json` dan klik **Publish**. Jangan gunakan rules public `read/write: true`.
-7. Upload kandungan ZIP ke root repo GitHub Pages, termasuk `index.html`, `.mjs`, `.css`, `.js`, `.json` dan audio. `PREVIEW_SATU_FAIL.html` ialah alternatif satu fail dan tak perlu dimuat naik bersama versi berbilang fail. Web hosting mesti menyokong HTTPS.
+## Tindakan penting dalam Firebase Console (WAJIB)
 
-## Apa yang disimpan
+1. Buka https://console.firebase.google.com/project/kedaikita-60c28/authentication/providers lalu aktifkan **Email/Password** di Sign-in method dan simpan. Jika belum mula Authentication, tekan Get started dahulu.
+2. Pergi ke https://console.firebase.google.com/project/kedaikita-60c28/database , pilih **Realtime Database**. Jika database belum diwujudkan, create dahulu di region yang dikehendaki (URL dalam konfigurasi merujuk database tersebut).
+3. Di Realtime Database > **Rules**, gantikan rules dengan kandungan `database.rules.json`, lalu klik **Publish**. Ini penting: jangan gunakan `.read: true` / `.write: true` secara umum. Path data: `users/{uid}/games/kedai-kita`.
+4. Di **Authentication > Settings > Authorized domains**, pastikan domain GitHub Pages awak atau domain custom disenaraikan (contoh `USERNAME.github.io` tanpa `https://`, atau domain GPT Sites jika digunakan).
 
-Di path `users/{UID}/games/kedai-kita`:
+## Cara main dan pasang di GitHub Pages
 
-```json
-{
-  "version": 1,
-  "state": {
-    "progress": { "day": 2, "wallet": 2500, "served": 4 },
-    "sound": true,
-    "session": null
-  },
-  "updatedAt": 1780000000000
-}
-```
+- Pakej ini sudah mengandungi `firebase-config.js` yang siap diisi. **Tidak perlu edit lagi konfigurasi.**
+- Upload **semua fail di dalam folder ZIP** (bukan folder tambahan) ke root repository GitHub Pages. Fail permulaan ialah `index.html`.
+- Buka link GitHub Pages menggunakan HTTPS, kemudian daftar akaun menggunakan email dan kata laluan.
+- Pilih log masuk supaya progres kerjaya disimpan ke Realtime Database setiap kali game melakukan save; cloud sync dijadualkan ~3 saat selepas perubahan dan fail tempatan disimpan sebagai sandaran.
+- Pilih tetamu jika belum mahu login: progres hanya ada pada peranti tersebut. Bila login akaun kosong, game menawarkan pilihan import progres tetamu.
+- Jangan serahkan password akaun Firebase atau service account file kepada sesiapa.
 
-Objek `progress` sebenar turut mengandungi inventori, naik taraf, sejarah, tetapan, dan data operasi kedai. `session` disimpan apabila ada syif aktif. `updatedAt` menggunakan timestamp daripada server Firebase. Kata laluan tidak disimpan dalam Realtime Database.
+## Semak simpanan
 
-## Cara simpanan berfungsi
+Dalam Firebase Console > Realtime Database > Data, cari `users` > `[uid pemain]` > `games` > `kedai-kita`, yang mengandungi `state` dengan progres dan `updatedAt`.
 
-- Selepas login, game cuba memuat progres dari Realtime Database bagi UID pemain tersebut.
-- Sepanjang bermain, progres disimpan terus pada peranti dan **auto-sync ke Realtime Database selepas kira-kira 3 saat** ketika perubahan permainan disimpan. Label di bahagian resit menunjukkan status.
-- Progres peranti yang belum berjaya disegerakkan tetap disimpan secara tempatan, kemudian cuba sync semula apabila talian pulih / login semula.
-- Pilih bermain sebagai tetamu untuk menyimpan hanya pada peranti; pemain boleh memilih import progres tetamu apabila mencipta akaun kosong.
-- Mod santai tidak mengubah progres kerjaya, mengikut sistem asal permainan.
-- Jika akaun dimainkan pada dua peranti serentak, simpanan terkini boleh menimpa simpanan terdahulu. Untuk elak konflik, main pada satu peranti pada satu masa.
-- Sambungan internet diperlukan untuk pendaftaran/login pertama dan sync. Firebase tertakluk pada kuota pelan.
+## Penting
 
-## Fail siap pakai
+Kod Web Firebase boleh dimasukkan ke fail awam, tetapi **bukan kunci rahsia**. Keselamatan data pengguna dikawal oleh Authentication dan Realtime Database Rules.
+Tidak ada akses Firebase Console dari fail ini: activation Authentication dan Publish Rules mesti dibuat oleh pemilik projek.
+Ujian dengan Firebase simulasi bukan pengesahan sambungan sebenar: untuk ujian live, aktifkan Email/Password + peraturan dahulu dan buat akaun ujian sendiri.
+Permainan di dua peranti secara serentak boleh menimpa simpanan sebelumnya, jadi gunakan satu peranti setiap masa.
+Versi yang sudah live di GPT Sites tidak diperbaharui secara automatik.
 
-- `KedaiKita_Realtime_Database_FULL.html` ialah fail tunggal untuk preview/browser. Ubah objek `window.KEDAI_FIREBASE_CONFIG` di dalamnya.
-- `KedaiKita_Realtime_Database_GitHub_Pages.zip` mengandungi semua fail web untuk publish pada GitHub Pages.
-- Game yang sudah live di GPT Sites **tidak dikemas kini secara automatik** oleh fail ini.
+## Fail
 
-### Jika sebelum ini sudah menggunakan Firestore
-
-Versi ini membaca **Realtime Database sahaja**. Rekod yang sudah tersimpan di Firestore tidak berpindah automatik. Jika pernah menyimpan di Firestore, backup atau migrasikan rekod terlebih dahulu. Simpanan tetamu/tempatan masih ada pada browser yang sama, melainkan browser data dipadam.
+`index.html`, `style.css`, `app.mjs`, `engine.mjs`, `art.mjs`, `cloud.mjs`, `firebase-config.js`, audio, `database.rules.json`, dan fail HTML satu-fail `KedaiKita_Firebase_CONNECTED_PREVIEW.html`.
