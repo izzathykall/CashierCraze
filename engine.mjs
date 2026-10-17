@@ -563,6 +563,14 @@ export function netTotal(customer){return Math.max(0,customer.total-(customer.di
 export function amountDue(customer){const total=netTotal(customer);return customer.method==='cash'&&customer.kind!=='return'?Math.round(total/5)*5:total}
 export function tenderFor(total){return [500,1000,2000,5000,10000,20000].find(v=>v>=total)||Math.ceil(total/10000)*10000}
 export function changeParts(cents){const parts=[];for(const value of DENOMS){const count=Math.floor(cents/value);if(count)parts.push({value,count});cents%=value}return {parts,remainder:cents}}
+// Day 7+: short busy periods, based on game-clock minutes (not real time).
+export function rushHourActive(day,clockMinutes){
+ const d=Number(day)||1,t=Number(clockMinutes)||0;
+ return d>=7&&((t>=660&&t<870)||(t>=1020&&t<1140));
+}
+export function rushHourPeriod(day,clockMinutes){
+ return !rushHourActive(day,clockMinutes)?0:clockMinutes<870?1:2;
+}
 export function dayTarget(day){return Math.min(12,4+day)}
 export function createProgress(){return {version:1,day:1,wallet:0,lifetime:0,served:0,bestCombo:0,upgrades:{scanner:0,scale:0,conveyor:0,comfort:0,tips:0,storage:0,card:0,qr:0},history:[],unlocked:['essentials'],settings:{motion:true,theme:'mint',volume:.6,music:true,musicVolume:.2}}}
 export function restoreProgress(raw){try{const p=JSON.parse(raw);if(p?.version!==1||!Number.isInteger(p.day)||p.day<1||!Number.isFinite(p.wallet))return createProgress();return {...createProgress(),...p,upgrades:{...createProgress().upgrades,...p.upgrades},history:Array.isArray(p.history)?p.history.slice(-20):[],settings:{...createProgress().settings,...p.settings},unlocked:Array.isArray(p.unlocked)?[...new Set(['essentials',...p.unlocked.filter(id=>CATEGORIES.some(c=>c.id===id))])]:['essentials']}}catch{return createProgress()}}
@@ -581,8 +589,20 @@ export function makeCustomer(day,index,rng=Math.random,options={}){
  const allowed=options.paymentMethods||['cash'];const methods=['cash','card','qr','cash'].filter(m=>m==='cash'||allowed.includes(m));
  const method=index===0?'cash':methods[Math.floor(rng()*methods.length)];
  const kind=index%4===2?'vip':index%4===3?'express':'regular';
- if(day>=2&&index%3===1){const damaged=items.find(i=>!i.weighted);if(damaged){damaged.damaged=true;damaged.manualCode=randomManualCode(rng)}}
- return {person,items,method,willTip:rng()<.4,dialogueSeed:Math.floor(rng()*10000),cardFailure:method==='card'&&day>=2&&rng()<Math.max(.02,.12-(Math.max(1,Number(options.upgrades?.card)||1)-1)*.025),total:basketTotal(items),tender:tenderFor(basketTotal(items)),patience:Math.round(Math.max(65,115-day*4)*(kind==='express'?.8:1)),elapsed:0,kind,hasCoupon:index%3===1,couponApplied:false,discount:0,requiresPin:method==='card'&&rng()<.5,cardPin:String(1000+Math.floor(rng()*9000)),cardStage:'ready',pinInput:''};
+ // Random barcode failures appear from Day 4; upgraded scanners fail less often.
+ // Only packed goods can have the unreadable label, and at most one per customer.
+ const challenges=options.challenges!==false;
+ const scannerLevel=Math.max(0,Math.min(5,Number(options.upgrades?.scanner)||0));
+ const barcodeChance=Math.max(.045,.21-scannerLevel*.035);
+ if(challenges&&day>=4&&rng()<barcodeChance){const packed=items.filter(i=>!i.weighted);if(packed.length){const damaged=packed[Math.floor(rng()*packed.length)];damaged.damaged=true;damaged.manualCode=randomManualCode(rng)}}
+ // A card decline is not the same as a broken terminal.  Customers can use
+ // another card or pay cash, with a new interaction required in either case.
+ const cardLevel=Math.max(1,Math.min(5,Number(options.upgrades?.card)||1));
+ const declineChance=Math.max(.04,.17-(cardLevel-1)*.03);
+ const fail=challenges&&method==='card'&&day>=11&&rng()<declineChance;
+ const declineRoll=rng();
+ const cardDeclineReason=fail?(declineRoll<.45?'insufficient':declineRoll<.75?'technical':'expired'):null;
+ return {person,items,method,willTip:rng()<.4,dialogueSeed:Math.floor(rng()*10000),cardFailure:false,cardDeclineReason,cardDeclineHandled:false,total:basketTotal(items),tender:tenderFor(basketTotal(items)),patience:Math.round(Math.max(65,115-day*4)*(kind==='express'?.8:1)),elapsed:0,kind,hasCoupon:index%3===1,couponApplied:false,discount:0,requiresPin:method==='card'&&rng()<.5,cardPin:String(1000+Math.floor(rng()*9000)),cardStage:'ready',pinInput:''};
 }
 export function unlockCategory(progress,id){
  const c=CATEGORIES.find(c=>c.id===id);

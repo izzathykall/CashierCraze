@@ -1,4 +1,4 @@
-import {PRODUCTS,PEOPLE,UPGRADES,DENOMS,money,itemPrice,basketTotal,amountDue,dayTarget,createProgress,restoreProgress,makeCustomer,tipFor,buyUpgrade,netTotal,applyCoupon,dailyMissions,claimMission,calculateExpression,CATEGORIES,availableProducts,unlockCategory,randomManualCode,dayFinished,changeParts,machineTimings,availablePaymentMethods,tenderFor,ensureOperations,stockQuote,buyStock,MAX_STOCK_PURCHASE,LOW_STOCK_UNITS,stockForBasket,takeStock,stockUnits,stockTarget,stockCapacity,stockCost,wholesaleChange,payStoreCost,receiveStoreCash,ensureShift,loseStar,settleShift,arrivalWait,clockText,customerLine,PAPER_PACK,PAPER_COST,CARD_REPAIR_COST,cardRepairCost,returnPolicy,returnMatches} from './engine.mjs?v=2026-10-18-store-v3';
+import {PRODUCTS,PEOPLE,UPGRADES,DENOMS,money,itemPrice,basketTotal,amountDue,dayTarget,createProgress,restoreProgress,makeCustomer,tipFor,buyUpgrade,netTotal,applyCoupon,dailyMissions,claimMission,calculateExpression,CATEGORIES,availableProducts,unlockCategory,randomManualCode,dayFinished,changeParts,machineTimings,availablePaymentMethods,tenderFor,ensureOperations,stockQuote,buyStock,MAX_STOCK_PURCHASE,LOW_STOCK_UNITS,stockForBasket,takeStock,stockUnits,stockTarget,stockCapacity,stockCost,wholesaleChange,payStoreCost,receiveStoreCash,ensureShift,loseStar,settleShift,arrivalWait,clockText,customerLine,PAPER_PACK,PAPER_COST,CARD_REPAIR_COST,cardRepairCost,returnPolicy,returnMatches,rushHourActive,rushHourPeriod} from './engine.mjs?v=2026-10-18-challenges-v1';
 import {productArt,moneyArt} from './art.mjs';
 import {createCloudSync} from './cloud.mjs?v=2026-10-18-gameplay-v2';
 
@@ -16,7 +16,7 @@ let paymentMinimized=false,musicUnlocked=false,musicLevel=0,musicTarget=-1,music
 let calculatorPosition=null,calculatorDrag=null,musicStarting=false,musicGain=null,musicSource=null,chaChingBuffer=null,chaChingPromise=null,chaChingSource=null;
 let renderedBasket=null,renderedSceneCustomer=undefined,selectedCodeItem=null,calculatorInput='',calculatorResult='',advancePending=false;
 const STORAGE='kedai-kita-v1';
-const APP_BUILD=window.__KEDAI_ACTIVE_VERSION__||'2026-10-18-store-v3';
+const APP_BUILD=window.__KEDAI_ACTIVE_VERSION__||'2026-10-18-challenges-v1';
 const UPDATE_CHECK_URL='./version.json';
 let storageOK=true,progress=createProgress(),session=null,phase='scan',customer=null,mode='career',combo=0,busy=false,paused=true,modalKind='intro',cashPicked=[],lastTip=0,lastEarned=0,toastTimer,audioCtx,scannerBuffer=null,scannerBufferPromise=null,scannerSource=null,sound=true,drag=null,scanToken=0;
 let updatePrompt=null,updateCheckTimer=null;
@@ -69,9 +69,21 @@ function newCustomer(){
  const featuredNames=['person-izzat','person-sakinah','person-wawa'];
  const alreadyFeatured=session.seenPeople.some(id=>featuredNames.includes(id));
  const featuredId=mode==='career'&&!alreadyFeatured?featuredNames[(progress.day-1)%featuredNames.length]:null;
- const selected=makeCustomer(mode==='practice'?Math.max(2,progress.day):progress.day,session.index,Math.random,{seen:session.seenPeople,forcedPersonId:featuredId,paymentMethods:availablePaymentMethods(progress.upgrades,mode==='practice'),upgrades:progress.upgrades,unlocked:mode==='practice'?CATEGORIES.map(c=>c.id):progress.unlocked,stock:mode==='practice'?null:progress.inventory});
+ const rush=mode==='career'&&rushHourActive(progress.day,session.clockMinutes);
+ const selected=makeCustomer(mode==='practice'?Math.max(2,progress.day):progress.day,session.index,Math.random,{seen:session.seenPeople,forcedPersonId:featuredId,paymentMethods:availablePaymentMethods(progress.upgrades,mode==='practice'),upgrades:progress.upgrades,challenges:mode==='career',unlocked:mode==='practice'?CATEGORIES.map(c=>c.id):progress.unlocked,stock:mode==='practice'?null:progress.inventory});
  if(!selected){session.practiceDay=(session.practiceDay||1)+1;session.seenPeople=[];toast('Syif latihan baharu bermula.');newCustomer();return}
- customer=selected;prepareReturnCustomer();session.seenPeople.push(customer.person.id);customer.patience+=(progress.upgrades.comfort||0)*15;
+ customer=selected;prepareReturnCustomer();session.seenPeople.push(customer.person.id);
+ // Rush hour increases pressure but comfort upgrades still provide a safety margin.
+ if(rush){
+   customer.patience=Math.max(45,Math.round(customer.patience*.78));
+   const period=rushHourPeriod(progress.day,session.clockMinutes);
+   session.rushNotified??=[];
+   if(!session.rushNotified.includes(period)){
+     session.rushNotified.push(period);
+     toast('⚡ RUSH HOUR! Pelanggan semakin ramai. Layan dengan pantas!');
+   }
+ }
+ customer.patience+=(progress.upgrades.comfort||0)*15;
  $('customerArt').className='customer arrive';
  const incomingCustomer=customer;
  setTimeout(()=>{if(customer===incomingCustomer){$('customerArt').classList.remove('arrive');requestAnimationFrame(positionCustomerDialogue)}},650);
@@ -105,8 +117,8 @@ function renderProducts(){
  let slot=0;
  for(const p of items){const el=$('product-'+p.uid);if(!el)continue;
    if(!p.scanned){el.style.setProperty('--slot',slot);el.dataset.slot=String(slot++);el.tabIndex=(window.innerWidth<=760||slot<=5)?0:-1}
-   el.classList.toggle('scanned',!!p.scanned);el.classList.toggle('damaged',!!p.damaged&&!p.repaired);el.classList.remove('busy');el.disabled=!!p.scanned;
-   el.setAttribute('aria-label',p.name+', '+(p.scanned?'sudah dalam beg':p.damaged&&!p.repaired?'kod manual '+p.manualCode:p.weighted?'tekan untuk timbang':'tekan untuk scan'));
+   el.classList.toggle('scanned',!!p.scanned);el.classList.toggle('damaged',!!p.damaged&&!p.repaired&&!!p.barcodeFailTriggered);el.classList.remove('busy');el.disabled=!!p.scanned;
+   el.setAttribute('aria-label',p.name+', '+(p.scanned?'sudah dalam beg':p.damaged&&!p.repaired&&p.barcodeFailTriggered?'kod manual '+p.manualCode:p.weighted?'tekan untuk timbang':'tekan untuk scan'));
  }
  $('beltHint').textContent=!customer&&session?'Menunggu pelanggan · tiada barang di conveyor':scanned===items.length?'Semua siap. Teruskan bayaran!':slot>5?slot+' barang menunggu · bergerak ke depan automatik':'Scan barang · conveyor bergerak automatik';
  $('undoScanBtn').disabled=!customer||phase!=='scan'||busy||!scanned;
@@ -128,7 +140,19 @@ function onItemMove(e){if(!drag)return;const d=drag;if(!d.moved&&Math.hypot(e.cl
 function inside(e,r){return e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom}
 function cancelDrag(){if(!drag)return;drag.ghost?.remove();drag.el.style.opacity='';drag.el.removeEventListener('pointermove',onItemMove);$('scannerZone').classList.remove('highlight');$('scaleZone').classList.remove('highlight');drag=null}
 function onItemUp(e){if(!drag)return;const d=drag;let target=null;if(d.moved){if(inside(e,$('scannerZone').getBoundingClientRect()))target='scanner';if(inside(e,$('scaleZone').getBoundingClientRect()))target='scale'}cancelDrag();if(!d.moved||target)processItem(d.p.uid,target)}
-async function processItem(uid,target=null,manual=false){if(paused||busy||phase!=='scan'||!ensurePaper())return;const p=customer.items.find(i=>i.uid===uid);if(!p||p.scanned)return;if(p.damaged&&!p.repaired&&!manual){showCodePad(uid);return}const correct=p.weighted?'scale':'scanner';if(target&&target!==correct){toast(p.weighted?'Barang ini perlu ditimbang. Seret ke penimbang.':'Ada barcode! Seret barang ini ke scanner.',true);return}busy=true;const token=scanToken;const el=$('products').querySelector(`[data-uid="${uid}"]`);el?.classList.add('busy');fly(p.id,el,$(correct==='scale'?'scaleZone':'scannerZone'));if(p.weighted){prepareScaleSound();$('scaleZone').classList.remove('stable');$('scaleZone').classList.add('weighing');setScaleReading(p,0);$('scaleItem').innerHTML=productArt(p.id);$('scaleItem').dataset.uid=p.uid;$('scaleState').textContent='MENIMBANG';$('scaleCaption').textContent='Menstabilkan bacaan berat…';const valid=await delayActive(machineTimings(progress.upgrades).weighMs,token,frac=>{setScaleReading(p,Math.max(0,frac<.95?frac+Math.sin(frac*42)*.05:1));$('weightProgress').style.width=frac*100+'%'});if(!valid)return;$('scaleZone').classList.remove('weighing');setScaleReading(p);$('scaleZone').classList.add('stable');$('scaleState').textContent='STABIL';$('scaleCaption').textContent=money(itemPrice(p))+' · Masuk resit secara automatik';playScaleSound()}else{$('scannerZone').classList.add('scanning');$('scannerStatus').textContent='Membaca barcode…';const valid=await delayActive(machineTimings(progress.upgrades).scanMs,token);if(!valid)return;$('scannerZone').classList.remove('scanning');$('scannerStatus').textContent='✓ '+p.name+' · '+money(itemPrice(p));beep('scan')}p.scanned=true;p.scanOrder=(customer.scanSequence||0)+1;customer.scanSequence=p.scanOrder;session.scans=(session.scans||0)+1;if(p.weighted)session.weighed=(session.weighed||0)+1;busy=false;fly(p.id,$(p.weighted?'scaleZone':'scannerZone'),$('bagZone'));if(p.weighted)setTimeout(()=>{if(token===scanToken&&$('scaleItem').dataset.uid===p.uid){$('scaleItem').innerHTML='';$('scaleItem').dataset.uid=''}},420);renderProducts();renderActivity();renderHeader();renderReceipt();renderPayment();const bag=document.querySelector('.bag-zone');bag.classList.remove('pop');void bag.offsetWidth;bag.classList.add('pop');if(customer.items.every(i=>i.scanned)){customer.elapsed=Math.max(0,customer.elapsed-2);$('speech').textContent=customer.kind==='return'?customer.returnReason:'Dah siap semua! '+({cash:'Saya bayar tunai ya.',card:'Saya nak guna kad.',qr:'Saya guna QR.'}[customer.method]);toast(customer.kind==='return'?'Barang siap discan. Bandingkan resit pemulangan.':'Semua barang siap. Masa untuk bayaran!');setMobileView('payment')}save()}
+async function processItem(uid,target=null,manual=false){if(paused||busy||phase!=='scan'||!ensurePaper())return;const p=customer.items.find(i=>i.uid===uid);if(!p||p.scanned)return;const correct=p.weighted?'scale':'scanner';if(target&&target!==correct){toast(p.weighted?'Barang ini perlu ditimbang. Seret ke penimbang.':'Ada barcode! Seret barang ini ke scanner.',true);return}
+ if(p.damaged&&!p.repaired&&!manual){
+   busy=true;const attempt=scanToken;
+   $('scannerZone').classList.add('scanning');$('scannerStatus').textContent='Membaca barcode…';
+   const ok=await delayActive(Math.min(500,machineTimings(progress.upgrades).scanMs+200),attempt);
+   if(!ok)return;
+   busy=false;$('scannerZone').classList.remove('scanning');
+   p.barcodeFailTriggered=true;$('scannerStatus').textContent='✕ Barcode tidak dapat dibaca';
+   renderProducts();beep('error');save();
+   toast('Barcode rosak! Masukkan kod manual untuk scan.');
+   showCodePad(uid);return;
+ }
+ busy=true;const token=scanToken;const el=$('products').querySelector(`[data-uid="${uid}"]`);el?.classList.add('busy');fly(p.id,el,$(correct==='scale'?'scaleZone':'scannerZone'));if(p.weighted){prepareScaleSound();$('scaleZone').classList.remove('stable');$('scaleZone').classList.add('weighing');setScaleReading(p,0);$('scaleItem').innerHTML=productArt(p.id);$('scaleItem').dataset.uid=p.uid;$('scaleState').textContent='MENIMBANG';$('scaleCaption').textContent='Menstabilkan bacaan berat…';const valid=await delayActive(machineTimings(progress.upgrades).weighMs,token,frac=>{setScaleReading(p,Math.max(0,frac<.95?frac+Math.sin(frac*42)*.05:1));$('weightProgress').style.width=frac*100+'%'});if(!valid)return;$('scaleZone').classList.remove('weighing');setScaleReading(p);$('scaleZone').classList.add('stable');$('scaleState').textContent='STABIL';$('scaleCaption').textContent=money(itemPrice(p))+' · Masuk resit secara automatik';playScaleSound()}else{$('scannerZone').classList.add('scanning');$('scannerStatus').textContent='Membaca barcode…';const valid=await delayActive(machineTimings(progress.upgrades).scanMs,token);if(!valid)return;$('scannerZone').classList.remove('scanning');$('scannerStatus').textContent='✓ '+p.name+' · '+money(itemPrice(p));beep('scan')}p.scanned=true;p.scanOrder=(customer.scanSequence||0)+1;customer.scanSequence=p.scanOrder;session.scans=(session.scans||0)+1;if(p.weighted)session.weighed=(session.weighed||0)+1;busy=false;fly(p.id,$(p.weighted?'scaleZone':'scannerZone'),$('bagZone'));if(p.weighted)setTimeout(()=>{if(token===scanToken&&$('scaleItem').dataset.uid===p.uid){$('scaleItem').innerHTML='';$('scaleItem').dataset.uid=''}},420);renderProducts();renderActivity();renderHeader();renderReceipt();renderPayment();const bag=document.querySelector('.bag-zone');bag.classList.remove('pop');void bag.offsetWidth;bag.classList.add('pop');if(customer.items.every(i=>i.scanned)){customer.elapsed=Math.max(0,customer.elapsed-2);$('speech').textContent=customer.kind==='return'?customer.returnReason:'Dah siap semua! '+({cash:'Saya bayar tunai ya.',card:'Saya nak guna kad.',qr:'Saya guna QR.'}[customer.method]);toast(customer.kind==='return'?'Barang siap discan. Bandingkan resit pemulangan.':'Semua barang siap. Masa untuk bayaran!');setMobileView('payment')}save()}
 function delayActive(ms,token,onProgress){return new Promise(resolve=>{let elapsed=0,last=performance.now();function tick(now){const delta=Math.min(100,now-last);last=now;if(token!==scanToken){resolve(false);return}if(!paused&&!document.hidden){elapsed+=delta;onProgress?.(Math.min(1,elapsed/ms))}if(elapsed>=ms){resolve(true);return}requestAnimationFrame(tick)}requestAnimationFrame(tick)})}
 function fly(productId,from,to){if(!from)return;const a=from.getBoundingClientRect(),b=to.getBoundingClientRect(),el=document.createElement('div');el.className='fly-item';el.innerHTML=productArt(productId);el.style.left=a.left+a.width/2-23+'px';el.style.top=a.top+a.height/2-23+'px';$('fxLayer').append(el);void el.offsetWidth;requestAnimationFrame(()=>{el.style.transform=`translate(${b.left+b.width/2-a.left-a.width/2}px,${b.top+b.height/2-a.top-a.height/2}px) scale(.75)`;el.style.opacity='0'});setTimeout(()=>el.remove(),420)}
 function completePayment(transaction=customer){
@@ -145,7 +169,7 @@ function completePayment(transaction=customer){
 function advance(){
  if(advancePending||!['success','lost'].includes(phase))return;if(mode==='career'&&session.stars===0){showStarRecovery();return}advancePending=true;
  if(mode==='career'&&dayFinished(session,progress.day)){phase='end';save();renderPayment();showSummary();return}
- session.index++;const wait=mode==='practice'?0:arrivalWait(session.clockMinutes);if(wait){session.waitSeconds=wait;customer=null;phase='waiting';advancePending=false;resetStations();render();save()}else newCustomer();
+ session.index++;const wait=mode==='practice'||rushHourActive(progress.day,session.clockMinutes)?0:arrivalWait(session.clockMinutes);if(wait){session.waitSeconds=wait;customer=null;phase='waiting';advancePending=false;resetStations();render();save()}else newCustomer();
 }
 function loseCustomer(){if(!['scan','offer','change'].includes(phase))return;scanToken++;busy=false;cancelDrag();phase='lost';session.lost++;const starLost=loseStar(session,'Pelanggan menunggu terlalu lama.');showTransactionResult(0,starLost,'Pelanggan menunggu terlalu lama.');combo=0;resetStations();render();save();toast('Pelanggan hilang sabar. Cuba lagi!',true);advance()}
 function floatingTip(amount){if(!amount)return;const r=$('walletLabel').getBoundingClientRect(),el=document.createElement('div');el.className='floating-tip';el.textContent='+'+money(amount);el.style.left=r.left+'px';el.style.top=r.bottom+18+'px';$('fxLayer').append(el);setTimeout(()=>el.remove(),1850)}
@@ -287,7 +311,7 @@ function showCodePad(uid=null){
  const selected=customer.items.find(p=>p.uid===uid&&!p.scanned);selectedCodeItem=selected?.uid||null;
  if(!selected){showCatalogue();return}
  const code=productCode(selected);
- if(selected.damaged&&!selected.repaired){beep('error');$('scannerStatus').textContent='Barcode rosak · masukkan kod pada label'}
+ if(selected.damaged&&!selected.repaired){$('scannerStatus').textContent='Barcode rosak · masukkan kod pada label'}
  openModal('codes',`<div class="modal-pad manual-code-modal"><div class="modal-heading"><div><div class="modal-kicker">LABEL BARCODE ROSAK</div><h2>Masukkan kod pada barang.</h2></div><button class="icon-btn" id="closeCodes" aria-label="Tutup">${icon('close')}</button></div><div class="manual-item">${productArt(selected.id)}<div><b>${selected.name}</b><small>Salin kod rawak pada label gantian ini.</small><div class="broken-barcode" aria-label="Barcode koyak dan tidak boleh dibaca"><i></i><b>BARCODE ROSAK</b></div><strong class="random-code-label">${code}</strong></div></div><form id="manualForm" class="manual-entry"><input id="manualCode" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="4 digit pada label" aria-label="Kod rawak pada barang" autocomplete="off"><button class="primary-btn" type="submit">Scan kod ${icon('scan')}</button></form><p id="codeError" class="code-error" aria-live="polite"></p><div class="manual-keypad">${['1','2','3','4','5','6','7','8','9','C','0','⌫'].map(k=>`<button type="button" data-manual-key="${k}">${k}</button>`).join('')}</div><p class="muted">Kod ini khas untuk barang ini sahaja. Barang lain akan menerima kod berbeza.</p></div>`);
  $('closeCodes').onclick=closeModal;
  $('modalContent').querySelectorAll('[data-manual-key]').forEach(b=>b.onclick=()=>{const input=$('manualCode'),k=b.dataset.manualKey;if(k==='C')input.value='';else if(k==='⌫')input.value=input.value.slice(0,-1);else if(input.value.length<4)input.value+=k});
@@ -341,7 +365,7 @@ function normalizeSession(){
  const id=customer.person.id||customer.person.name;if(!session.seenPeople.includes(id))session.seenPeople.push(id);
  customer.cardPin??=String(1000+Math.floor(Math.random()*9000));customer.requiresPin??=customer.method==='card'&&Math.random()<.5;
  if(mode!=='practice'&&!availablePaymentMethods(progress.upgrades).includes(customer.method)&&!['success','end'].includes(phase)){customer.method='cash';customer.tender=tenderFor(amountDue(customer));customer.requiresPin=false;customer.paymentChanged=true;phase=customer.items.every(i=>i.scanned)?'offer':'scan'}
- customer.cardContactReady=false;if(customer.cardStage!=='pin')customer.cardPose=null;customer.qrScanned=false;customer.qrArmed=false;customer.cardStage=['pin','ready'].includes(customer.cardStage)?customer.cardStage:'ready';customer.pinInput??='';
+ customer.cardContactReady=false;if(customer.cardStage!=='pin')customer.cardPose=null;customer.qrScanned=false;customer.qrArmed=false;customer.cardStage=['pin','ready','declined'].includes(customer.cardStage)?customer.cardStage:'ready';customer.pinInput??='';
  customer.items.forEach(p=>{if(p.damaged&&!/^\d{4}$/.test(p.manualCode||''))p.manualCode=randomManualCode()});
 }
 function toggleDark(){progress.settings??={motion:true,theme:'mint'};progress.settings.dark=!progress.settings.dark;applySettings();save()}
@@ -358,27 +382,61 @@ function renderDigital(){
  $('paymentArea').innerHTML=`<div id="payDevice" class="payment-scene qr-scene stage-${stage}"><div class="customer-phone"><div class="phone-camera"></div><small>DOMPET PELANGGAN</small><b>${customer.person.name}</b><button class="phone-qr" id="qrTarget" aria-label="Imbas kod QR pada telefon" ${working?'disabled':''}>${qrArt()}<i class="qr-scan-line"></i></button><span>${money(amountDue(customer))}</span><small>Tunjukkan kod untuk diimbas</small></div><div class="qr-hand-scanner" id="qrScanner" role="button" tabindex="0" aria-label="Ambil scanner kemudian imbas QR">${icon('scan')}<i></i></div><div class="qr-light-cone"></div></div><button class="primary-btn" id="digitalPay" ${working?'disabled':''}>${working?'Mengesahkan bayaran…':'Ambil scanner '+icon('scan')}</button><p class="payment-hint">Seret scanner ke QR. Atau tekan Ambil scanner kemudian tekan kod pada telefon.</p>`;
  $('digitalPay').onclick=armQrScanner;if(!working)bindQrScanner();
 }
+const CARD_DECLINE_MESSAGES={
+ insufficient:'Baki kad tidak mencukupi. Minta pelanggan menggunakan kad lain atau wang tunai.',
+ technical:'Rangkaian bank terganggu. Cuba sentuh kad sekali lagi atau gunakan tunai.',
+ expired:'Kad pelanggan telah tamat tempoh. Gunakan kad lain atau wang tunai.'
+};
+function declineCardIfNeeded(transaction){
+ if(!transaction||transaction!==customer||transaction.method!=='card')return false;
+ // Map old in-progress saves that used a generic card-failure flag.
+ const reason=transaction.cardDeclineReason||(transaction.cardFailure?'technical':null);
+ if(!reason||transaction.cardDeclineHandled)return false;
+ transaction.cardDeclineHandled=true;transaction.cardFailure=false;
+ transaction.cardDeclineReason=reason;transaction.cardStage='declined';
+ transaction.cardContactReady=false;transaction.cardPose=null;transaction.pinInput='';
+ busy=false;renderPayment();save();beep('error');return true;
+}
+function resolveCardDecline(action){
+ if(paused||busy||phase!=='offer'||customer?.method!=='card'||customer.cardStage!=='declined')return;
+ if(action==='cash'){
+  customer.method='cash';customer.cardDeclineReason=null;customer.cardStage='ready';
+  customer.cardContactReady=false;customer.cardPose=null;customer.pinInput='';
+  customer.tender=tenderFor(amountDue(customer));
+  toast('Pelanggan memilih tunai. Terima duit dan pulangkan baki.');
+ }else if(action==='other-card'){
+  customer.cardDeclineReason=null;customer.cardStage='ready';
+  customer.cardContactReady=false;customer.cardPose=null;customer.pinInput='';
+  customer.cardPin=String(1000+Math.floor(Math.random()*9000));customer.cardExpiry='12/28';
+  const all=['theme-green','theme-gold','theme-pink','theme-black'];
+  customer.cardTheme=all[(all.indexOf(customer.cardTheme)+1+all.length)%all.length];
+  toast('Kad baharu diberikan. Sentuh kad pada terminal semula.');
+ }else return;
+ renderPayment();renderReceipt();renderScene();save();
+}
 async function startDigital(confirmed=false){
- if(paused||busy||phase!=='offer'||customer.cardStage==='pin'||(customer.method==='qr'&&!customer.qrScanned)||!ensurePaper())return;
+ if(paused||busy||phase!=='offer'||['pin','declined'].includes(customer.cardStage)||(customer.method==='qr'&&!customer.qrScanned)||!ensurePaper())return;
  const card=customer.method==='card',store=operatingStore();
  if(card&&(!confirmed||!customer.cardContactReady))return;
- if(card&&(store.cardBroken||customer.cardFailure)){store.cardBroken=true;store.cardHealth=0;customer.cardFailure=false;save();renderHeader();renderPayment();beep('error');return}
+ if(card&&store.cardBroken){renderPayment();beep('error');return;}
  busy=true;const token=scanToken,transaction=customer;customer.cardStage=card?'contact':'processing';renderPayment();save();
  const qrLevel=Math.max(1,Math.min(5,Number(progress.upgrades.qr)||1));
  if(!await delayActive(card?520:Math.max(580,1400-(qrLevel-1)*205),token))return;
  busy=false;beep('scan');
  if(card&&customer.requiresPin){customer.cardStage='pin';customer.pinInput='';renderPayment();save();return}
+ if(card&&declineCardIfNeeded(transaction))return;
  completePayment(transaction);
 }
 function renderCardTerminal(){
- const stage=customer.cardStage||'ready',pin=stage==='pin',working=['contact','processing'].includes(stage);
+ const stage=customer.cardStage||'ready',pin=stage==='pin',declined=stage==='declined',working=['contact','processing'].includes(stage);
  const action='Sentuh kad pada terminal';
  const keys=['1','2','3','4','5','6','7','8','9','⌫','0','OK'];
  const themes=['theme-green','theme-gold','theme-pink','theme-black'];
  customer.cardTheme??=themes[Math.floor(Math.random()*themes.length)];
  const holder=(customer.person?.name||'Pelanggan').toUpperCase();
- const helper=pin?'Masukkan 4 digit PIN dan tekan OK':working?'Sila tunggu pengesahan terminal':customer.requiresPin?'Sentuh kad pada terminal. Kemudian masukkan PIN':'Sentuh kad pada terminal';
- $('paymentArea').innerHTML=`<div id="payDevice" class="payment-scene modern-card-scene stage-${stage}"><div class="terminal-v2"><div class="terminal-v2-top"></div><div class="contact-reader" id="cardReaderTarget"><span class="reader-icon" aria-hidden="true"></span><small>SENTUH KAD PADA TERMINAL</small></div><div class="terminal-v2-screen-frame"><div class="terminal-v2-screen"><small>${pin?'MASUKKAN PIN':working?'SEDANG MEMPROSES':'TERMINAL SEDIA'}</small><b>${pin?('●'.repeat(customer.pinInput.length)||'_ _ _ _'):money(amountDue(customer))}</b><span>${helper}</span></div></div><div class="terminal-v2-keys">${keys.map(k=>`<button type="button" data-terminal-pin="${k}" class="${k==='OK'?'pin-ok':k==='⌫'?'pin-clear':''}" ${pin?'':'disabled'} aria-label="${k==='⌫'?'Padam':k==='OK'?'Sahkan PIN':k}">${k}</button>`).join('')}</div></div><button class="payment-bankcard ${customer.cardTheme}" id="swipeCard" ${working||pin?'disabled':''} aria-label="${action}"><span class="bank-name">KITA BANK</span><span class="card-motif" aria-hidden="true"></span><i class="card-chip"></i><span class="card-wave" aria-hidden="true">))))</span><b class="card-number">4826 2026 1234 5678</b><em class="card-expiry">12/26</em><small class="card-holder">${holder}</small><strong class="card-brand">mc</strong></button><span class="terminal-action-label">${pin?'Masukkan 4 digit PIN pada terminal':working?'Kad sedang dibaca…':'Sentuh kad pada terminal'}</span></div>${pin?`<div class="card-pin-guide"><small>PIN pelanggan</small><strong>${customer.cardPin}</strong><span id="pinError" class="code-error">${customer.pinError||''}</span></div>`:`<div class="card-drag-instruction">${customer.requiresPin?'Sentuh kad pada terminal. Selepas itu masukkan PIN pelanggan.':'Sentuh kad pada terminal untuk lengkapkan pembayaran.'}</div>`}`;
+ const helper=declined?'Transaksi tidak berjaya. Lihat arahan di bawah.':pin?'Masukkan 4 digit PIN dan tekan OK':working?'Sila tunggu pengesahan terminal':customer.requiresPin?'Sentuh kad pada terminal. Kemudian masukkan PIN':'Sentuh kad pada terminal';
+ $('paymentArea').innerHTML=`<div id="payDevice" class="payment-scene modern-card-scene stage-${stage}"><div class="terminal-v2"><div class="terminal-v2-top"></div><div class="contact-reader" id="cardReaderTarget"><span class="reader-icon" aria-hidden="true"></span><small>SENTUH KAD PADA TERMINAL</small></div><div class="terminal-v2-screen-frame"><div class="terminal-v2-screen"><small>${declined?'BAYARAN DITOLAK':pin?'MASUKKAN PIN':working?'SEDANG MEMPROSES':'TERMINAL SEDIA'}</small><b>${declined?'DECLINED':pin?('●'.repeat(customer.pinInput.length)||'_ _ _ _'):money(amountDue(customer))}</b><span>${helper}</span></div></div><div class="terminal-v2-keys">${keys.map(k=>`<button type="button" data-terminal-pin="${k}" class="${k==='OK'?'pin-ok':k==='⌫'?'pin-clear':''}" ${pin?'':'disabled'} aria-label="${k==='⌫'?'Padam':k==='OK'?'Sahkan PIN':k}">${k}</button>`).join('')}</div></div><button class="payment-bankcard ${customer.cardTheme}" id="swipeCard" ${working||pin||declined?'disabled':''} aria-label="${action}"><span class="bank-name">KITA BANK</span><span class="card-motif" aria-hidden="true"></span><i class="card-chip"></i><span class="card-wave" aria-hidden="true">))))</span><b class="card-number">4826 2026 1234 5678</b><em class="card-expiry">${customer.cardExpiry||(customer.cardDeclineReason==='expired'?'09/26':'12/26')}</em><small class="card-holder">${holder}</small><strong class="card-brand">mc</strong></button><span class="terminal-action-label">${declined?'Pilih kaedah bayaran seterusnya':pin?'Masukkan 4 digit PIN pada terminal':working?'Kad sedang dibaca…':'Sentuh kad pada terminal'}</span></div>${pin?`<div class="card-pin-guide"><small>PIN pelanggan</small><strong>${customer.cardPin}</strong><span id="pinError" class="code-error">${customer.pinError||''}</span></div>` : declined?`<div class="card-decline-panel"><b>Transaksi kad tidak berjaya</b><p>${CARD_DECLINE_MESSAGES[customer.cardDeclineReason]||'Pilih kaedah bayaran lain.'}</p><div class="card-decline-actions"><button type="button" class="secondary-btn" data-card-recovery="other-card">${customer.cardDeclineReason==='technical'?'Cuba semula':'Guna kad lain'}</button><button type="button" class="secondary-btn" data-card-recovery="cash">Bayar tunai</button></div></div>` : `<div class="card-drag-instruction">${customer.requiresPin?'Sentuh kad pada terminal. Selepas itu masukkan PIN pelanggan.':'Sentuh kad pada terminal untuk lengkapkan pembayaran.'}</div>`}`;
+ if(declined){$('paymentArea').querySelectorAll('[data-card-recovery]').forEach(b=>b.onclick=()=>resolveCardDecline(b.dataset.cardRecovery));return}
  if(pin){setCardPose();$('paymentArea').querySelectorAll('[data-terminal-pin]').forEach(b=>b.onclick=()=>pressPin(b.dataset.terminalPin));return}
  if(working)setCardPose();else bindBankCardDrag();
 }
@@ -388,7 +446,7 @@ function pressPin(key){
  if(key==='⌫')customer.pinInput=customer.pinInput.slice(0,-1);
  else if(key==='OK'){
    if(customer.pinInput!==customer.cardPin){customer.pinError='PIN tidak tepat. Semak nombor yang pelanggan beri.';customer.pinInput='';beep('error');renderPayment();save();return}
-   busy=true;customer.cardStage='processing';const token=scanToken,transaction=customer;renderPayment();save();beep('scan');delayActive(1100,token).then(valid=>{if(valid){busy=false;completePayment(transaction)}});return;
+   busy=true;customer.cardStage='processing';const token=scanToken,transaction=customer;renderPayment();save();beep('scan');delayActive(900,token).then(valid=>{if(valid){busy=false;if(declineCardIfNeeded(transaction))return;completePayment(transaction)}});return;
  }else if(/^\d$/.test(key)&&customer.pinInput.length<4)customer.pinInput+=key;
  renderPayment();save();
 }
@@ -554,7 +612,9 @@ function readyForCustomer(){return progress.paper>0&&availableProducts(progress.
 function enterSupplyWait(){customer=null;phase='supply';busy=false;advancePending=false;session.waitSeconds=0;resetStations();render();save()}
 function ensurePaper(){if(mode==='practice'||progress.paper>0)return true;showInventory();toast('Kertas resit habis. Beli satu pek sebelum melayan pelanggan.',true);return false}
 function renderOperations(){
- const s=operatingStore();$('storeClock').textContent=clockText(session?.clockMinutes||480)+(session?.clockMinutes>=1020?' · Waktu lewat':' · Waktu kedai');
+ const s=operatingStore(),rush=mode==='career'&&!!session&&rushHourActive(progress.day,session.clockMinutes);
+ $('storeClock').textContent=clockText(session?.clockMinutes||480)+(rush?' · ⚡ RUSH HOUR':session?.clockMinutes>=1020?' · Waktu lewat':' · Waktu kedai');
+ $('storeClock').classList.toggle('rush-active',rush);
  const stars=session?.stars??3;$('storeStars').textContent='★'.repeat(stars)+'☆'.repeat(3-stars);$('storeStars').setAttribute('aria-label',stars+' daripada 3 bintang servis');
  $('supplyStatus').textContent='Resit '+s.paper+' · Kad '+(s.cardBroken?'ROSAK':s.cardHealth+'%');$('operationsBtn').classList.toggle('needs-supply',s.paper<=3||s.cardBroken);
 }
