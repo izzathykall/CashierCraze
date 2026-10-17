@@ -148,181 +148,34 @@ body[data-theme="dark"] .modern-card-scene{background:radial-gradient(ellipse at
 @media(max-width:380px){.payment-sheet .modern-card-scene{--terminal-left:calc(50% - 120px);--terminal-width:128px;--bankcard-left:calc(50% + 26px);--bankcard-width:94px;--bankcard-height:64px}.modern-card-scene .terminal-v2{padding:11px 8px}.modern-card-scene .terminal-v2-screen b{font-size:15px}.modern-card-scene .contact-reader small{font-size:5px}.modern-card-scene .terminal-v2-keys{margin-left:9px;margin-right:9px}.modern-card-scene .payment-bankcard>b{font-size:5px}.modern-card-scene .payment-bankcard em{display:none}}
 .modern-card-scene .chip-slot{top:calc(140px - (var(--bankcard-height) + 4px)/2);height:calc(var(--bankcard-height) + 4px)}
 
-/* ===== Firebase Account & Cloud Save ===== */
-.account-nav-btn {border:1px solid rgba(24,79,64,.18);border-radius:13px;display:inline-flex;gap:6px;align-items:center;justify-content:center;padding:9px 10px;background:#f1faf5;color:#174936;font-size:12px;font-weight:900;cursor:pointer;white-space:nowrap}
-.account-nav-btn .icon {width:17px;height:17px;stroke-width:2.3}
-.account-overlay {position:fixed;inset:0;border:0;background:transparent;padding:12px;max-width:none;max-height:none;width:100%;height:100%;overflow:auto;box-sizing:border-box;color:#183d33}
-.account-overlay[open] {display:flex;align-items:center;justify-content:center}
-.account-overlay::backdrop {background:rgba(10,35,29,.75);backdrop-filter:blur(7px)}
-.account-panel {width:min(100%,440px);max-height:calc(100dvh - 24px);overflow:auto;box-sizing:border-box;margin:auto;padding:clamp(21px,4vw,34px);background:linear-gradient(158deg,#fffef9 5%,#f1f8f1 100%);border:1px solid #dce8de;border-radius:25px;box-shadow:0 25px 85px rgba(5,27,17,.23)}
-.account-logo {display:flex;align-items:center;gap:8px;font-size:19px;color:#287453;letter-spacing:-.6px}
-.account-logo b span {color:#e5964c}.account-logo small {margin-left:auto;color:#47705e;background:#e2f4e7;padding:5px 8px;border-radius:8px;font-weight:900;font-size:10px;letter-spacing:1px}
-.account-panel h2 {font-size:clamp(22px,4vw,29px);line-height:1.2;letter-spacing:-.75px;margin:18px 0 8px;color:#163f32}
-.account-panel p {font-size:13px;line-height:1.65;color:#557062;margin:0 0 16px}
-.account-panel .account-message {min-height:18px;margin-bottom:10px;color:#206a53;font-weight:700;overflow-wrap:anywhere}
-.account-panel .account-message.error {color:#b34c3c}
-.account-tabs {display:flex;gap:5px;background:#e7f0e7;border-radius:13px;padding:5px;margin:5px 0 18px}
-.account-tabs button {border:0;border-radius:10px;background:transparent;flex:1;font:inherit;font-size:14px;font-weight:800;padding:11px;color:#537665;cursor:pointer}
-.account-tabs button.active {background:white;color:#185e44;box-shadow:0 2px 7px #163b2420}
-.account-form {display:grid;gap:8px}
-.account-form label {font-weight:900;font-size:12px;margin-top:4px;color:#214839}
-.account-form input {appearance:none;background:#fff;border:1.5px solid #cadfd0;border-radius:12px;padding:13px 14px;font-size:15px;color:#184232;width:100%;box-sizing:border-box;outline:none}
-.account-form input:focus {border-color:#4a9274;box-shadow:0 0 0 3px #4a927426}
-.account-form .primary-btn {justify-content:center;margin-top:12px;min-height:46px;width:100%}
-.account-panel button:focus-visible {outline:3px solid #56a47e;outline-offset:2px}
-.account-panel button:disabled {cursor:wait;opacity:.5}
-.account-text-button {border:none;background:transparent;font:inherit;color:#286d50;font-size:13px;font-weight:900;padding:9px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
-.account-secondary {border:1px solid #c6dccc;background:#fff;border-radius:13px;color:#205340;padding:13px 16px;width:100%;cursor:pointer;font:inherit;font-size:13px;font-weight:800}
-.account-actions {display:grid;gap:9px;margin-top:10px}
-.account-actions .primary-btn {width:100%;justify-content:center}
-.account-choice-label {padding:12px;background:#dff0e1;border-radius:12px;font-size:13px;font-weight:800;margin:8px 0 12px}
-#accountChoice {display:grid;gap:10px}#accountChoice[hidden],#accountAuthFields[hidden],#accountOverview[hidden],#accountControls[hidden],#accountGuest[hidden],#accountRetry[hidden],#accountClose[hidden],#accountLogout[hidden],#accountReset[hidden] {display:none!important}
-#accountChoice .primary-btn {justify-content:center;width:100%;font-size:13px}
-.account-current {display:flex;align-items:center;gap:12px;background:#e4f2e7;border-radius:14px;padding:16px;margin:12px 0}
-.account-current>span {border-radius:50%;background:#206445;color:white;padding:8px 12px;font-weight:900}
-.account-current small {display:block;font-size:10px;letter-spacing:1px;font-weight:900;color:#718b76}
-.account-current strong {overflow-wrap:anywhere;display:block;font-size:14px;color:#1a4c38}
-.account-panel .account-sync-small {margin-bottom:0;color:#247354;font-weight:800}
-.account-fineprint {font-size:11px;line-height:1.5;color:#829484;text-align:center;margin-top:18px;border-top:1px solid #e0ebe0;padding-top:15px}
-@media (max-width:650px) {.account-nav-btn{padding:9px}.account-nav-btn span:last-child{display:none}.account-nav-btn .icon{width:19px;height:19px}.account-panel{border-radius:19px}}
 
-/* Dialogue fix — anchor bubble beside (not over) the customer's face. */
-.store-scene .speech{
-  box-sizing:border-box;
-  overflow-x:hidden;
-  overflow-y:auto;
-  overscroll-behavior:contain;
-  overflow-wrap:break-word;
-  hyphens:auto;
-  scrollbar-width:thin;
-  box-shadow:0 7px 18px #264b3a22,0 2px 0 #9bb8a426;
-}
-.store-scene .speech::after{
-  content:"";
-  position:absolute;
-  left:-6px;
-  top:55%;
-  bottom:auto;
-  width:12px;
-  height:12px;
-  border:0;
-  background:#fffdf4;
-  border-left:1px solid #ffffff88;
-  border-bottom:1px solid #ffffff88;
-  transform:rotate(45deg);
-  opacity:1;
-  pointer-events:none;
-}
-.store-scene .speech.speech-left::after{
-  left:auto;
-  right:-6px;
-  transform:rotate(225deg);
-}
-body[data-theme="dark"] .store-scene .speech::after{background:#263e33}
-
-
-/* Classic layout maintained; only the top game controls are collapsible. */
-.mobile-controls-slot{display:none}
-.update-prompt[hidden]{display:none!important}
-.update-prompt{position:fixed;z-index:210;right:16px;bottom:max(16px,env(safe-area-inset-bottom) + 12px);max-width:320px;display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:16px;border:1px solid #c6d8b3;background:#f8fbef;color:#214c3b;box-shadow:0 10px 28px #163b2b38;text-align:left}
-.update-prompt>span:first-child{display:grid;place-items:center;width:36px;height:36px;flex:none;background:#e2edd3;border-radius:11px}
-.update-prompt .update-prompt-copy{display:block;min-width:0}
-.update-prompt b{display:block;font-size:13px}.update-prompt small{display:block;margin-top:2px;font-size:10px;color:#64836a}
-.update-prompt:disabled{opacity:.85;cursor:wait}body[data-theme="dark"] .update-prompt{background:#273e31;color:#e5f0d9;border-color:#607f53}
-/* Avoid compositor repaint/flicker when floating calculator is dragged. */
-.floating-calculator{animation:none!important;backface-visibility:hidden;-webkit-backface-visibility:hidden;will-change:transform;contain:layout paint}
-.floating-calculator.dragging{animation:none!important;transition:none!important}
-.floating-calculator.dragging *{transition:none!important}
-@media(max-width:760px){
- .mobile-controls-slot{display:flex;flex:none;flex-direction:column;align-items:stretch;gap:5px;margin:-2px 0 7px;padding:0;width:100%;position:relative;z-index:7}
- .mobile-controls-toggle{align-self:flex-end;display:flex;align-items:center;justify-content:center;gap:7px;min-width:112px;min-height:34px;padding:6px 11px;border:1px solid #d9e1d1;border-radius:10px;background:#eef0e4;color:var(--ink);font-size:10px;font-weight:600;box-shadow:0 1px 2px #1b403108}
- .mobile-controls-toggle svg{height:15px;width:15px}.mobile-chevron{font-size:15px;line-height:1}
- .mobile-controls-slot>.tools{position:static!important;inset:auto!important;top:auto!important;bottom:auto!important;left:auto!important;right:auto!important;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;width:100%!important;max-width:100%!important;min-width:0!important;gap:7px!important;transform:none!important;border:1px solid #dbe3d4!important;border-radius:12px!important;padding:7px!important;background:#f0f2e9!important;box-shadow:0 5px 13px #25432b0d!important;margin:0!important;height:auto!important}
- .mobile-controls-slot>.tools[hidden]{display:none!important}
- .mobile-controls-slot>.tools>button{position:static!important;display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;min-width:0!important;max-width:none!important;height:39px!important;min-height:39px!important;padding:4px!important;margin:0!important;border-radius:10px!important}
- .mobile-controls-slot>.tools .account-nav-btn span:last-child{display:none!important}
- .mobile-controls-slot>.tools svg{width:18px!important;height:18px!important}
- .mobile-tabs{padding-right:0!important}
- .utility-bar{overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex-wrap:nowrap!important}
- .utility-bar::-webkit-scrollbar{display:none}
- .utility-bar>button{flex:0 0 auto!important;min-width:fit-content}
- .update-prompt{left:12px;right:12px;bottom:max(10px,env(safe-area-inset-bottom) + 10px);max-width:none}
-}
-
-
-/* POS V5 — clean responsive navigation (game display remains classic) */
-.ops-status,.ops-actions{display:flex;align-items:center;gap:10px}
-.operations-bar{display:flex;align-items:center;justify-content:space-between;gap:14px}
-.ops-actions{margin-left:auto}.ops-status{min-width:0}
-.utility-bar>button{transition:background .15s ease,border-color .15s ease,box-shadow .15s ease}
-.utility-bar>button:focus-visible,.mobile-controls-toggle:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
-@media(max-width:760px){
-  .utility-bar{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important;width:100%;height:auto!important;overflow:visible!important;margin-bottom:8px!important;padding:0!important}
-  .utility-bar>button{min-width:0!important;width:100%;min-height:41px;height:auto!important;justify-content:center!important;padding:9px 5px!important;font-size:10px!important;line-height:1.2;white-space:nowrap!important;border-radius:12px!important;gap:5px!important}
-  .utility-bar>button svg{width:16px!important;height:16px!important;flex-shrink:0}
-  .operations-bar{display:flex!important;align-items:center!important;gap:8px!important;min-height:40px!important;margin:0 0 7px!important;flex-wrap:nowrap!important}
-  .ops-status{gap:6px;flex:0 1 auto;min-width:0;white-space:nowrap}
-  .ops-actions{gap:6px;flex:none;margin-left:auto}
-  .ops-actions #supplyStatus{display:none!important}
-  .ops-actions #operationsBtn{min-width:0!important;min-height:36px!important;padding:7px 9px!important;font-size:10px!important;border-radius:10px}
-  .mobile-controls-slot{display:block!important;width:auto!important;margin:0!important;padding:0!important;position:static!important;z-index:auto!important}
-  .mobile-controls-toggle{min-width:0!important;min-height:36px!important;gap:5px!important;border-radius:10px!important;margin:0!important;padding:7px 10px!important;font-size:10px!important;white-space:nowrap}
-  .mobile-chevron{font-size:13px}
-  .mobile-controls-slot>.tools{position:absolute!important;right:12px!important;top:auto!important;left:12px!important;z-index:90!important;width:calc(100% - 24px)!important;max-width:none!important;box-shadow:0 9px 25px #143a2933!important}
-  .mobile-controls-slot>.tools[hidden]{display:none!important}
-  .mobile-tabs{padding-right:0!important;margin-bottom:8px!important;gap:7px!important}
-  .mobile-tab{min-height:43px!important;font-size:11px!important;border-radius:11px!important}
-  .brand small{letter-spacing:1px}
-}
-@media(max-width:375px){
-  .utility-bar>button{font-size:9px!important}
-  .ops-actions #operationsBtn{padding:6px!important}
-  .mobile-controls-toggle{padding:6px 8px!important}
-  .operations-bar #storeClock{font-size:10px}
-  .operations-bar #storeStars{font-size:14px}
-}
-/* Terminal enlargement; physical terminal keys are the only PIN buttons. */
-.payment-sheet .modern-card-scene{--terminal-width:200px;--terminal-left:calc(50% - 128px);--terminal-top:30px;--bankcard-left:calc(50% + 66px);--bankcard-width:116px;--bankcard-height:76px;height:395px}
-.modern-card-scene .terminal-v2{width:var(--terminal-width);height:324px;left:var(--terminal-left);top:var(--terminal-top);padding:13px 15px;border-radius:22px;transform:none}
-.modern-card-scene .terminal-v2-brand{font-size:10px}
-.modern-card-scene .contact-reader{height:28px;margin:9px 0 8px}
-.modern-card-scene .terminal-v2-screen{height:85px;padding:9px 7px}
-.modern-card-scene .terminal-v2-screen b{font-size:19px!important;letter-spacing:2px}
-.modern-card-scene .terminal-v2-screen small{font-size:9px}
-.modern-card-scene .terminal-v2-screen span{font-size:8px;line-height:1.3}
-.modern-card-scene .terminal-v2-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:12px 2px 0}
-.modern-card-scene .terminal-v2-keys button{height:30px;min-height:30px;border:1px solid #839990;border-bottom:2px solid #61766d;border-radius:6px;background:linear-gradient(#d2dfd7,#9fac9f);color:#193f33;font-weight:800;font-size:13px;padding:0;touch-action:manipulation}
-.modern-card-scene .terminal-v2-keys button:disabled{opacity:.55}
-.modern-card-scene .terminal-v2-keys button:not(:disabled):active{transform:translateY(1px);background:#e3efcb}
-.modern-card-scene .terminal-v2-keys .pin-ok{background:#99ce91;color:#173b27}
-.modern-card-scene .terminal-v2-keys .pin-clear{background:#e8bead}
-.modern-card-scene .chip-slot{top:122px!important;height:calc(var(--bankcard-height) + 4px)!important}
-.modern-card-scene .payment-bankcard{left:var(--bankcard-left);top:23px;width:var(--bankcard-width);height:var(--bankcard-height);padding:9px;touch-action:none;user-select:none}
-.modern-card-scene.insert-mode .payment-bankcard{top:162px}
-.modern-card-scene .terminal-action-label{bottom:11px;font-size:11px}
-.card-pin-guide{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--cream);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:9px;font-size:12px}
-.card-pin-guide strong{font:700 22px monospace;letter-spacing:3px;color:var(--green)}
-.card-pin-guide .code-error{margin:0!important}
-.card-drag-instruction{padding:11px 13px;font-size:12px}
-@media(max-width:700px){
- .payment-sheet .modern-card-scene{--terminal-width:190px;--terminal-left:calc(50% - 120px);--terminal-top:22px;--bankcard-left:calc(50% + 68px);--bankcard-width:102px;--bankcard-height:70px;height:372px}
- .modern-card-scene .terminal-v2{height:316px;padding:11px 13px}
- .modern-card-scene .terminal-v2-keys{gap:5px;margin-top:9px}
- .modern-card-scene .terminal-v2-keys button{height:29px;min-height:29px}
- .modern-card-scene .payment-bankcard{padding:8px}
- .modern-card-scene.insert-mode .payment-bankcard{top:156px}
- .card-pin-guide{font-size:11px}
-}
-@media(max-width:380px){
- .payment-sheet .modern-card-scene{--terminal-width:182px;--terminal-left:calc(50% - 117px);--bankcard-left:calc(50% + 65px);--bankcard-width:92px;--bankcard-height:66px}
- .modern-card-scene .terminal-v2{padding:11px}
- .modern-card-scene.insert-mode .payment-bankcard{top:159px}
-}
-
-@keyframes kkCardIntoSlot{from{transform:translate3d(0,0,0)}to{transform:translate(var(--card-x,0px),var(--card-y,0px))}}
-.modern-card-scene.stage-inserting .payment-bankcard,.modern-card-scene.stage-contact .payment-bankcard{animation:kkCardIntoSlot .42s cubic-bezier(.22,.8,.34,1) both!important}
-/* Drop-down controls are positioned relative to the status row, not the viewport. */
-@media(max-width:760px){
- .operations-bar{position:relative;z-index:30}
- .mobile-controls-slot>.tools{top:100%!important;left:0!important;right:0!important;width:100%!important;max-width:none!important}
-}
+/* === Card payment UI polish update === */
+.payment-sheet-header h2:focus,.payment-sheet-header h2:focus-visible,#paymentTitle:focus,#paymentTitle:focus-visible{outline:none!important;box-shadow:none!important}
+.payment-sheet .modern-card-scene{--terminal-top:58px;--terminal-left:calc(50% - 118px);--terminal-width:150px;--bankcard-left:calc(50% + 48px);--bankcard-width:166px;--bankcard-height:102px;background:radial-gradient(ellipse at 38% 24%,#f7faf4,#dfe9e3 72%);overflow:hidden}
+.modern-card-scene .terminal-v2{left:var(--terminal-left);top:var(--terminal-top);width:var(--terminal-width);transform:none;z-index:3}
+.modern-card-scene .payment-bankcard{left:var(--bankcard-left);top:18px;width:var(--bankcard-width);height:var(--bankcard-height);padding:14px 14px 12px;border:1px solid #e3c57a;border-radius:16px;background:linear-gradient(135deg,#f4d88f 0%,#ddb662 48%,#f1d188 100%);box-shadow:0 10px 16px #6d573111,inset 0 1px 0 #fff5d6,inset 0 -1px 0 #c79a47;color:#624214;display:block;text-align:left;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;transform:translate(var(--card-x,0px),var(--card-y,0px));animation:none;transition:transform .18s ease,box-shadow .15s ease;will-change:transform;overflow:hidden}
+.modern-card-scene .payment-bankcard:before{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 0 55%,#ffffff55 65%,transparent 78%);pointer-events:none}
+.modern-card-scene .payment-bankcard:after{content:'';position:absolute;left:0;right:0;bottom:0;height:26px;background:linear-gradient(180deg,transparent,#c9953733)}
+.modern-card-scene .payment-bankcard .bankcard-brand{display:block;font:700 11px var(--display);letter-spacing:1.4px;color:#7a5620}
+.modern-card-scene .payment-bankcard .bankcard-topline{display:flex;justify-content:space-between;align-items:flex-start;margin-top:8px}
+.modern-card-scene .payment-bankcard .card-chip{display:block;width:28px;height:20px;border-radius:5px;background:linear-gradient(135deg,#f5e3af,#cbad5f);box-shadow:inset 0 0 0 1px #f9edc8,0 1px 0 #c39b43;position:relative}
+.modern-card-scene .payment-bankcard .card-chip:before,.modern-card-scene .payment-bankcard .card-chip:after{content:'';position:absolute;top:3px;bottom:3px;width:1px;background:#b08942;opacity:.7}.modern-card-scene .payment-bankcard .card-chip:before{left:9px}.modern-card-scene .payment-bankcard .card-chip:after{left:18px}
+.modern-card-scene .payment-bankcard .bankcard-wave{display:block;width:24px;height:16px;position:relative}.modern-card-scene .payment-bankcard .bankcard-wave:before,.modern-card-scene .payment-bankcard .bankcard-wave:after{content:'';position:absolute;inset:0;border:2px solid #85602b;border-left-color:transparent;border-top-color:transparent;border-bottom-color:transparent;border-radius:50%}.modern-card-scene .payment-bankcard .bankcard-wave:after{right:6px;left:6px;top:2px;bottom:2px;opacity:.7}
+.modern-card-scene .payment-bankcard .bankcard-number{display:block;margin-top:12px;font:700 14px/1.2 var(--display);letter-spacing:1.2px;color:#533916;text-shadow:0 1px 0 #fff4cf}
+.modern-card-scene .payment-bankcard .bankcard-holder{display:block;margin-top:10px;font-size:8px;letter-spacing:1.2px;color:#674823;text-transform:uppercase}
+.modern-card-scene .payment-bankcard .bankcard-valid{display:block;margin-top:3px;font-size:8px;letter-spacing:1.1px;color:#785426}
+.modern-card-scene .payment-bankcard em{position:absolute;right:12px;bottom:10px;font-style:normal;font-weight:800;font-size:12px;color:#7e5624;letter-spacing:1.2px}
+.modern-card-scene.insert-mode .payment-bankcard{top:calc(var(--terminal-top) + 142px - var(--bankcard-height)/2)}
+.modern-card-scene .payment-bankcard.dragging{cursor:grabbing;box-shadow:0 16px 26px #1f342f33}
+.modern-card-scene .payment-bankcard.returning{transition:transform .2s ease-out,box-shadow .2s}
+.modern-card-scene:is(.stage-contact,.stage-inserting,.stage-pin,.stage-processing) .payment-bankcard{cursor:default}
+.modern-card-scene.stage-inserting .payment-bankcard,.modern-card-scene.stage-pin .payment-bankcard,.modern-card-scene.stage-processing.insert-mode .payment-bankcard{z-index:1;box-shadow:0 6px 10px #1f342f22}
+.modern-card-scene.stage-inserting .payment-bankcard,.modern-card-scene.stage-pin .payment-bankcard{filter:saturate(.96)}
+.modern-card-scene .chip-slot{top:calc(142px - (var(--bankcard-height) + 8px)/2);height:calc(var(--bankcard-height) + 8px);width:14px;border-radius:8px;background:linear-gradient(180deg,#2d4743,#142a28);border:2px solid #60807a;box-shadow:inset 0 0 0 1px #0d201e,0 0 0 2px #edf3eb}.modern-card-scene .chip-slot small{position:absolute;right:17px;top:50%;transform:translateY(-50%);font-size:7px;letter-spacing:1px;color:#68847c;white-space:nowrap}
+.modern-card-scene .terminal-action-label{display:block;text-align:center;margin-top:10px;font-size:12px;font-weight:600;color:#48665c}
+.card-drag-instruction{text-align:center;padding:13px 14px;border:1px solid var(--line);border-radius:14px;background:#f3f0e6;font-weight:700;font-size:14px}
+.pin-entry-panel{display:flex;flex-direction:column;align-items:center;gap:14px;padding:14px 16px 16px;border:1px solid var(--line);border-radius:16px;background:#eef3eb}.pin-guide-center{text-align:center;width:100%}.pin-guide-center small{display:block;font-size:10px;letter-spacing:1.3px;text-transform:uppercase;color:#6d8378}.pin-guide-center strong{display:block;margin-top:6px;font:700 42px/1 var(--display);letter-spacing:6px}.pin-guide-center .code-error{text-align:center;margin:10px auto 0;max-width:420px}.pin-entry-panel .pin-keypad{width:min(410px,100%)}
+.modern-card-scene .contact-reader{border-radius:16px}.modern-card-scene .terminal-v2-screen{padding:11px 10px 10px}.modern-card-scene .terminal-v2-screen b{font-size:18px}.modern-card-scene .terminal-v2-screen span{line-height:1.45}
+.speech{box-shadow:0 6px 18px #244e2a14;border:1px solid #fff8}
+@media(max-width:700px){.payment-sheet .modern-card-scene{--terminal-top:46px;--terminal-left:calc(50% - 124px);--terminal-width:142px;--bankcard-left:calc(50% + 28px);--bankcard-width:122px;--bankcard-height:78px}.modern-card-scene .payment-bankcard{padding:10px 10px 8px}.modern-card-scene .payment-bankcard .bankcard-brand{font-size:8px}.modern-card-scene .payment-bankcard .card-chip{width:20px;height:14px}.modern-card-scene .payment-bankcard .bankcard-wave{width:18px;height:12px}.modern-card-scene .payment-bankcard .bankcard-number{font-size:9px;letter-spacing:.8px;margin-top:9px}.modern-card-scene .payment-bankcard .bankcard-holder,.modern-card-scene .payment-bankcard .bankcard-valid{font-size:6px}.modern-card-scene .payment-bankcard em{font-size:8px;right:9px;bottom:8px}.pin-guide-center strong{font-size:30px;letter-spacing:4px}.pin-entry-panel .pin-keypad button{min-height:38px}.speech{max-width:39%;}}
+@media(max-width:380px){.payment-sheet .modern-card-scene{--terminal-left:calc(50% - 116px);--terminal-width:132px;--bankcard-left:calc(50% + 22px);--bankcard-width:110px;--bankcard-height:72px}.modern-card-scene .payment-bankcard .bankcard-number{font-size:8px}}

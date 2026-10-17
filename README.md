@@ -1,19 +1,18 @@
-# Kedai Kita POS V5.4 — Full Version
+# Kedai Kita — GitHub Pages (pembaikan bunyi)
 
-Pakej ini mengandungi semua fail permainan yang lengkap untuk GitHub Pages.
+Semua fail kini berada pada folder utama. Tiada folder assets diperlukan.
 
-## Pembetulan
-- Menambah semula elemen tersembunyi `activityStatus` yang diperlukan oleh kod lama; reka bentuk minimal V5 kekal.
-- `renderActivity()` kini selamat jika elemen tersebut tidak wujud atau tiada pelanggan sedang aktif.
-- Ralat semasa memaparkan progres dibezakan daripada ralat membaca data. Progres tidak dipadam atau ditimpa semasa kegagalan paparan.
-- CSS, JavaScript dan `version.json` menggunakan versi baharu V5.4 untuk mengelakkan cache Safari bercampur.
+## Untuk repository sedia ada
+1. Ekstrak ZIP ini.
+2. Upload semua fail ke root repository KedaiKita dan gantikan fail lama dengan nama sama. Fail index.html dan app.mjs mesti diganti.
+3. Commit changes dan tunggu deployment GitHub Pages selesai.
+4. Muat semula halaman game dan tekan mula/teruskan untuk membolehkan pelayar memainkan audio.
+5. Semak ikon bunyi serta volume muzik dan efek dalam Tetapan jika perlu.
 
-## Cara pasang
-1. Backup folder atau repository GitHub Pages dahulu.
-2. Extract ZIP dan muat naik **semua 14 fail terus ke root repository**, menggantikan fail lama. Jangan muat naik folder induk.
-3. Commit dan tunggu GitHub Pages selesai deploy.
-4. Buka URL asal ditambah `?v=pos54` dan log masuk seperti biasa.
-5. Jangan padam database Firebase; **Rules V5 yang telah dipublish kekal sama**.
+Fail audio: gameplay-music.mp3, scanner-beep.wav, cha-ching.wav, scale-place.mp3.
+Kesemua fail ini mesti berada sebaris dengan index.html dan app.mjs.
 
-## Ujian
-Lakukan ujian log masuk, sambung sesi yang disimpan, skrin syif, dan save selepas satu transaksi. Ujian pelayar dengan Firebase simulasi boleh dijalankan tanpa mengakses akaun sebenar.
+Kod ini membetulkan rujukan audio untuk susunan rata seperti repository anda. Ia tidak memadam simpanan game. Gunakan alamat GitHub Pages yang sama dan pelayar yang sama untuk meneruskan simpanan sedia ada.
+
+Untuk repository baharu: Settings > Pages > Deploy from a branch > main > /(root) > Save.
+Game ini tiada keperluan build atau API key. Jangan muat naik ZIP sahaja; ekstrak dahulu.
