@@ -187,10 +187,19 @@ function initIllustrations(){
 }
 function applySettings(){applyMachineSpeeds();const settings=progress.settings||{motion:true,theme:'mint'};document.body.classList.toggle('reduced-motion',settings.motion===false);document.body.setAttribute('data-theme',previewTheme||(settings.dark?'dark':settings.theme||'mint'));$('nightBtn').setAttribute('aria-pressed',String(!!settings.dark));$('nightLabel').textContent=settings.dark?'Cerah':'Gelap'}
 function renderActivity(){
- if(!customer){$('activityStatus').textContent=phase==='supply'?'Tambah bekalan kedai':'Menunggu pelanggan';return;}
- const left=customer.items.filter(p=>!p.scanned).length;
- $('activityStatus').textContent=phase==='success'?'Transaksi selesai · combo ×'+combo:customer.kind==='vip'?'VIP di kaunter · tip ×1.5':customer.kind==='express'?'Pelanggan ekspres · servis pantas':left?left+' barang lagi · '+(session?.scans||0)+' scan hari ini':'Semua barang sudah dibungkus';
- $('activityStatus').classList.toggle('vip',customer.kind==='vip');
+ // The compact POS header deliberately hides the nonessential activity label.
+ // Older and newer index.html versions may omit this element entirely.
+ // Never fail cloud-save hydration because an optional UI element is missing.
+ const status=$('activityStatus');
+ if(!status)return;
+ if(!customer){
+  status.textContent=phase==='supply'?'Tambah bekalan kedai':'Menunggu pelanggan';
+  status.classList.remove('vip');
+  return;
+ }
+ const left=(customer.items||[]).filter(p=>!p.scanned).length;
+ status.textContent=phase==='success'?'Transaksi selesai · combo ×'+combo:customer.kind==='vip'?'VIP di kaunter · tip ×1.5':customer.kind==='express'?'Pelanggan ekspres · servis pantas':left?left+' barang lagi · '+(session?.scans||0)+' scan hari ini':'Semua barang sudah dibungkus';
+ status.classList.toggle('vip',customer.kind==='vip');
 }
 function undoScan(){
  if(!customer||busy||phase!=='scan')return;

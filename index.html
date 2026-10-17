@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#173f37"><meta name="description" content="Jaga kaunter pasar mini anda. Scan barang, timbang hasil segar, kira baki dan bina Kedai Kita!">
 <title>Kedai Kita — Cashier Simulator</title>
-<link id="gameStyles" rel="stylesheet" href="style.css?v=2026-10-17-pos-v5-3">
+<link id="gameStyles" rel="stylesheet" href="style.css?v=2026-10-17-pos-v5-4">
 </head>
 <body>
 <div class="app" id="gameApp">
@@ -20,6 +20,7 @@
     <button id="inventoryBtn"><span data-icon="basket"></span><span>Inventori</span></button><button id="catalogueBtn"><span data-icon="book"></span><span>Katalog</span></button>
     <button id="settingsBtn"><span data-icon="settings"></span><span>Tetapan</span></button>
     <button id="nightBtn" aria-label="Tukar mod gelap" aria-pressed="false"><span data-icon="moon"></span><span id="nightLabel">Gelap</span></button>
+    <span id="activityStatus" class="activity-status" hidden aria-live="off"></span>
 
   </nav>
   <div class="operations-bar"><div class="ops-status"><span id="storeClock">08:00</span><span id="storeStars" aria-label="Bintang servis">★ ★ ★</span></div><div class="ops-actions"><button id="operationsBtn">Bekalan</button><span id="supplyStatus">Resit 12</span><div id="mobileControlsSlot" class="mobile-controls-slot" aria-label="Kawalan permainan"><button id="mobileControlsToggle" type="button" class="mobile-controls-toggle" aria-controls="gameTools" aria-expanded="false"><span data-icon="settings"></span><b>Kawalan</b><span class="mobile-chevron" aria-hidden="true">▾</span></button></div></div></div>
@@ -110,7 +111,7 @@
 <script type="module">
 // Versioned loader: the currently published version.json controls the actual CSS and app version.
 // Each release only requires updating version.json after publishing the changed files.
-const fallbackBuild = '2026-10-17-pos-v5-3';
+const fallbackBuild = '2026-10-17-pos-v5-4';
 let activeBuild = fallbackBuild;
 try {
   const response = await fetch('./version.json?init=' + Date.now(), {cache:'no-store'});

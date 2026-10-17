@@ -224,7 +224,18 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
     else if(ready&&!user)setStatus('Disimpan pada peranti · mod tetamu');
   }
   async function finishAccount(state) {
-    hide();hydrate(state);ready=true;writeLocal(currentKey,state||capture());setStatus('✓ Progres akaun dimuatkan');
+    // Hydrate before closing the login overlay so a UI error can be
+    // diagnosed separately from database read failures. No remote data
+    // is overwritten when rendering a saved game fails.
+    try { hydrate(state); }
+    catch (error) {
+      error.cloudStage='memaparkan progres permainan';
+      throw error;
+    }
+    ready=true;
+    writeLocal(currentKey,state||capture());
+    setStatus('✓ Progres akaun dimuatkan');
+    hide();
   }
   async function onSignedIn(next, token, retryNewSession=false) {
     setIdentity(next);guestMode=false;showLoading('Menyemak sesi dan progres akaun…');
@@ -264,6 +275,7 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
       newCredentialLogin=false;
       syncError=err;setStatus('Simpanan tidak dapat diakses');show();showRegion('error');
       ui.title.textContent='Tidak dapat muat simpanan';ui.hint.textContent='Progres anda tidak dipadam. Semak ralat di bawah atau cuba sambung semula.';
+      loadStep=err?.cloudStage||loadStep;
       diagnostic(loadStep,err);
       message(`${errorMalay(err)} (Butiran: ${errorDetails(err,loadStep)})`,true);
       ui.retry.onclick=()=>{
