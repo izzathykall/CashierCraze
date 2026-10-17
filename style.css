@@ -248,3 +248,81 @@ body[data-theme="dark"] .store-scene .speech::after{background:#263e33}
  .utility-bar>button{flex:0 0 auto!important;min-width:fit-content}
  .update-prompt{left:12px;right:12px;bottom:max(10px,env(safe-area-inset-bottom) + 10px);max-width:none}
 }
+
+
+/* POS V5 — clean responsive navigation (game display remains classic) */
+.ops-status,.ops-actions{display:flex;align-items:center;gap:10px}
+.operations-bar{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.ops-actions{margin-left:auto}.ops-status{min-width:0}
+.utility-bar>button{transition:background .15s ease,border-color .15s ease,box-shadow .15s ease}
+.utility-bar>button:focus-visible,.mobile-controls-toggle:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+@media(max-width:760px){
+  .utility-bar{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important;width:100%;height:auto!important;overflow:visible!important;margin-bottom:8px!important;padding:0!important}
+  .utility-bar>button{min-width:0!important;width:100%;min-height:41px;height:auto!important;justify-content:center!important;padding:9px 5px!important;font-size:10px!important;line-height:1.2;white-space:nowrap!important;border-radius:12px!important;gap:5px!important}
+  .utility-bar>button svg{width:16px!important;height:16px!important;flex-shrink:0}
+  .operations-bar{display:flex!important;align-items:center!important;gap:8px!important;min-height:40px!important;margin:0 0 7px!important;flex-wrap:nowrap!important}
+  .ops-status{gap:6px;flex:0 1 auto;min-width:0;white-space:nowrap}
+  .ops-actions{gap:6px;flex:none;margin-left:auto}
+  .ops-actions #supplyStatus{display:none!important}
+  .ops-actions #operationsBtn{min-width:0!important;min-height:36px!important;padding:7px 9px!important;font-size:10px!important;border-radius:10px}
+  .mobile-controls-slot{display:block!important;width:auto!important;margin:0!important;padding:0!important;position:static!important;z-index:auto!important}
+  .mobile-controls-toggle{min-width:0!important;min-height:36px!important;gap:5px!important;border-radius:10px!important;margin:0!important;padding:7px 10px!important;font-size:10px!important;white-space:nowrap}
+  .mobile-chevron{font-size:13px}
+  .mobile-controls-slot>.tools{position:absolute!important;right:12px!important;top:auto!important;left:12px!important;z-index:90!important;width:calc(100% - 24px)!important;max-width:none!important;box-shadow:0 9px 25px #143a2933!important}
+  .mobile-controls-slot>.tools[hidden]{display:none!important}
+  .mobile-tabs{padding-right:0!important;margin-bottom:8px!important;gap:7px!important}
+  .mobile-tab{min-height:43px!important;font-size:11px!important;border-radius:11px!important}
+  .brand small{letter-spacing:1px}
+}
+@media(max-width:375px){
+  .utility-bar>button{font-size:9px!important}
+  .ops-actions #operationsBtn{padding:6px!important}
+  .mobile-controls-toggle{padding:6px 8px!important}
+  .operations-bar #storeClock{font-size:10px}
+  .operations-bar #storeStars{font-size:14px}
+}
+/* Terminal enlargement; physical terminal keys are the only PIN buttons. */
+.payment-sheet .modern-card-scene{--terminal-width:200px;--terminal-left:calc(50% - 128px);--terminal-top:30px;--bankcard-left:calc(50% + 66px);--bankcard-width:116px;--bankcard-height:76px;height:395px}
+.modern-card-scene .terminal-v2{width:var(--terminal-width);height:324px;left:var(--terminal-left);top:var(--terminal-top);padding:13px 15px;border-radius:22px;transform:none}
+.modern-card-scene .terminal-v2-brand{font-size:10px}
+.modern-card-scene .contact-reader{height:28px;margin:9px 0 8px}
+.modern-card-scene .terminal-v2-screen{height:85px;padding:9px 7px}
+.modern-card-scene .terminal-v2-screen b{font-size:19px!important;letter-spacing:2px}
+.modern-card-scene .terminal-v2-screen small{font-size:9px}
+.modern-card-scene .terminal-v2-screen span{font-size:8px;line-height:1.3}
+.modern-card-scene .terminal-v2-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:12px 2px 0}
+.modern-card-scene .terminal-v2-keys button{height:30px;min-height:30px;border:1px solid #839990;border-bottom:2px solid #61766d;border-radius:6px;background:linear-gradient(#d2dfd7,#9fac9f);color:#193f33;font-weight:800;font-size:13px;padding:0;touch-action:manipulation}
+.modern-card-scene .terminal-v2-keys button:disabled{opacity:.55}
+.modern-card-scene .terminal-v2-keys button:not(:disabled):active{transform:translateY(1px);background:#e3efcb}
+.modern-card-scene .terminal-v2-keys .pin-ok{background:#99ce91;color:#173b27}
+.modern-card-scene .terminal-v2-keys .pin-clear{background:#e8bead}
+.modern-card-scene .chip-slot{top:122px!important;height:calc(var(--bankcard-height) + 4px)!important}
+.modern-card-scene .payment-bankcard{left:var(--bankcard-left);top:23px;width:var(--bankcard-width);height:var(--bankcard-height);padding:9px;touch-action:none;user-select:none}
+.modern-card-scene.insert-mode .payment-bankcard{top:162px}
+.modern-card-scene .terminal-action-label{bottom:11px;font-size:11px}
+.card-pin-guide{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--cream);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:9px;font-size:12px}
+.card-pin-guide strong{font:700 22px monospace;letter-spacing:3px;color:var(--green)}
+.card-pin-guide .code-error{margin:0!important}
+.card-drag-instruction{padding:11px 13px;font-size:12px}
+@media(max-width:700px){
+ .payment-sheet .modern-card-scene{--terminal-width:190px;--terminal-left:calc(50% - 120px);--terminal-top:22px;--bankcard-left:calc(50% + 68px);--bankcard-width:102px;--bankcard-height:70px;height:372px}
+ .modern-card-scene .terminal-v2{height:316px;padding:11px 13px}
+ .modern-card-scene .terminal-v2-keys{gap:5px;margin-top:9px}
+ .modern-card-scene .terminal-v2-keys button{height:29px;min-height:29px}
+ .modern-card-scene .payment-bankcard{padding:8px}
+ .modern-card-scene.insert-mode .payment-bankcard{top:156px}
+ .card-pin-guide{font-size:11px}
+}
+@media(max-width:380px){
+ .payment-sheet .modern-card-scene{--terminal-width:182px;--terminal-left:calc(50% - 117px);--bankcard-left:calc(50% + 65px);--bankcard-width:92px;--bankcard-height:66px}
+ .modern-card-scene .terminal-v2{padding:11px}
+ .modern-card-scene.insert-mode .payment-bankcard{top:159px}
+}
+
+@keyframes kkCardIntoSlot{from{transform:translate3d(0,0,0)}to{transform:translate(var(--card-x,0px),var(--card-y,0px))}}
+.modern-card-scene.stage-inserting .payment-bankcard,.modern-card-scene.stage-contact .payment-bankcard{animation:kkCardIntoSlot .42s cubic-bezier(.22,.8,.34,1) both!important}
+/* Drop-down controls are positioned relative to the status row, not the viewport. */
+@media(max-width:760px){
+ .operations-bar{position:relative;z-index:30}
+ .mobile-controls-slot>.tools{top:100%!important;left:0!important;right:0!important;width:100%!important;max-width:none!important}
+}

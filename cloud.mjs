@@ -45,6 +45,20 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
   let guestMode = false, busy = false, mode = 'login', currentKey = GUEST_KEY;
   let timer = null, queued = null, writing = false, writesPending = null, epoch = 0;
   let syncError = null, configEnabled = false, started = false, saveCounter = 0;
+  let activeSessionToken = null, watchSessionStop = null, newCredentialLogin = false;
+  let kickedForOtherDevice = false, kickingOut = false;
+  const sessionPath = uid => api.ref(db, `activeSessions/${uid}`);
+  const browserSessionKey = uid => `kk-active-session-${uid}`;
+  const makeSessionToken = () => {
+    if(globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+    const bytes=new Uint8Array(32);globalThis.crypto.getRandomValues(bytes);
+    return Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
+  };
+  const detachSessionWatch=()=>{if(watchSessionStop){watchSessionStop();watchSessionStop=null}};
+  const clearSessionLocal=uid=>{try{sessionStorage.removeItem(browserSessionKey(uid))}catch{}};
+  const saveSessionLocal=(uid,token)=>{try{sessionStorage.setItem(browserSessionKey(uid),token)}catch{}};
+  const getSessionLocal=uid=>{try{return sessionStorage.getItem(browserSessionKey(uid))}catch{return null}};
+
   const setStatus = value => {report(value);const el=byId('accountSyncLabel');if(el)el.textContent=value;};
   const message = (value='', isError=false) => {ui.message.textContent=value;ui.message.classList.toggle('error', isError)};
   const show = () => {
@@ -80,6 +94,50 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
   };
   const localAccount = uid => readLocal(ACCOUNT_KEY(uid));
   const snapshotRef = uid => api.ref(db,`users/${uid}/games/kedai-kita`);
+  async function sessionReplaced(uid){
+    if(kickingOut||!user||user.uid!==uid)return;
+    kickingOut=true;kickedForOtherDevice=true;ready=false;queued=null;syncError=null;
+    clearTimeout(timer);timer=null;detachSessionWatch();activeSessionToken=null;clearSessionLocal(uid);
+    const stale=localAccount(uid);
+    if(stale?._cloudPending){stale._cloudPending=false;writeLocal(ACCOUNT_KEY(uid),stale)}
+    setStatus('Sesi akaun tamat');
+    try{await api.signOut(auth)}catch{}
+    showLogin('Akaun ini telah log masuk pada peranti lain.');
+    ui.guest.hidden=true;
+    message('Sesi pada peranti ini telah ditamatkan. Masukkan e-mel dan kata laluan semula untuk log masuk.',true);
+    kickingOut=false;
+  }
+  async function claimSession(uid,replaceExisting){
+    detachSessionWatch();activeSessionToken=null;
+    let token;
+    if(replaceExisting){
+      token=makeSessionToken();
+      // Server transaction serializes simultaneous logins; the latest successful
+      // credential login becomes the sole active session.
+      const result=await api.runTransaction(sessionPath(uid),()=>({token,startedAt:Date.now()}),{applyLocally:false});
+      if(!result.committed)throw new Error('Tidak dapat membuka sesi. Cuba lagi.');
+      const confirm=await api.get(sessionPath(uid));
+      if(confirm.val()?.token!==token){await sessionReplaced(uid);return false}
+      saveSessionLocal(uid,token);
+    }else{
+      token=getSessionLocal(uid);
+      if(!token){await sessionReplaced(uid);return false}
+      const result=await api.get(sessionPath(uid));
+      if(!result.exists()||result.val()?.token!==token){await sessionReplaced(uid);return false}
+    }
+    activeSessionToken=token;
+    watchSessionStop=api.onValue(sessionPath(uid),snapshot=>{
+      if(user?.uid===uid && activeSessionToken===token && snapshot.val()?.token!==token){
+        sessionReplaced(uid);
+      }
+    },err=>{if(user?.uid===uid)setStatus('Sesi tidak dapat disemak · semak sambungan')});
+    return true;
+  }
+  async function releaseSession(uid,token){
+    if(!token)return;
+    try{await api.runTransaction(sessionPath(uid),current=>current?.token===token?null:undefined,{applyLocally:false})}catch{}
+  }
+
   const setIdentity = next => {
     user=next;ready=false;currentKey=next?ACCOUNT_KEY(next.uid):GUEST_KEY;
     const e=byId('accountBtnText');if(e)e.textContent=next?'Akaun ✓':'Akaun';
@@ -90,10 +148,11 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
   };
   async function flush() {
     if(timer){clearTimeout(timer);timer=null}
-    if(writing||!ready||!user||!queued||!api)return;
+    if(writing||!ready||!user||!queued||!api||!activeSessionToken)return;
     const uid=user.uid, value=queued;queued=null;writing=true;
     try {
-      writesPending=api.set(snapshotRef(uid),{version:1,state:value,updatedAt:api.serverTimestamp()});
+      if(!activeSessionToken){throw new Error('Sesi akaun tidak aktif')}
+      writesPending=api.set(snapshotRef(uid),{version:1,state:value,sessionToken:activeSessionToken,updatedAt:api.serverTimestamp()});
       await writesPending;
       if(user?.uid===uid){
         const local=localAccount(uid);
@@ -111,15 +170,18 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
     const data=clone(state);
     if(user){data._cloudPending=true;data._clientStamp=`${Date.now()}-${++saveCounter}`}
     writeLocal(currentKey,data);
-    if(ready&&user&&!syncError)stage(data);
+    if(ready&&user&&activeSessionToken&&!syncError)stage(data);
     else if(ready&&!user)setStatus('Disimpan pada peranti · mod tetamu');
   }
   async function finishAccount(state) {
     hide();hydrate(state);ready=true;writeLocal(currentKey,state||capture());setStatus('✓ Progres akaun dimuatkan');
   }
   async function onSignedIn(next, token) {
-    setIdentity(next);guestMode=false;showLoading('Menyemak progres akaun…');
+    setIdentity(next);guestMode=false;showLoading('Menyemak sesi dan progres akaun…');
     try {
+      const valid=await claimSession(next.uid,newCredentialLogin);
+      newCredentialLogin=false;
+      if(!valid||token!==epoch||user?.uid!==next.uid)return;
       const result=await api.get(snapshotRef(next.uid));
       if(token!==epoch||user?.uid!==next.uid)return;
       const remote=result.exists()?result.val()?.state:null;
@@ -157,9 +219,11 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
     const token=++epoch;
     queued=null;if(timer){clearTimeout(timer);timer=null}
     if(next){await onSignedIn(next,token);return}
+    detachSessionWatch();activeSessionToken=null;
     setIdentity(null);hydrate(readLocal(GUEST_KEY));ready=true;syncError=null;
     setStatus('Disimpan pada peranti · mod tetamu');
-    if(guestMode)hide();else showLogin();
+    if(kickedForOtherDevice){showLogin('Akaun ini telah digunakan pada peranti lain.');ui.guest.hidden=true;message('Log masuk semula menggunakan kata laluan untuk terus bermain.',true)}
+    else if(guestMode)hide();else showLogin();
   }
   function openAccount() {
     pauseForAccount();
@@ -172,6 +236,9 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
     setBusy(true);message('Menyimpan progres sebelum log keluar…');
     if(queued)await flush();if(writesPending)try{await writesPending}catch{}
     ready=false;guestMode=false;
+    const uid=user.uid,token=activeSessionToken;
+    detachSessionWatch();activeSessionToken=null;clearSessionLocal(uid);
+    await releaseSession(uid,token);
     try{await api.signOut(auth)}catch(err){ready=true;showOverview();message(errorMalay(err),true)}
     setBusy(false);
   }
@@ -186,10 +253,11 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
       if(!email||password.length<6){message('Masukkan e-mel sah dan kata laluan sekurang-kurangnya 6 aksara.',true);return}
       setBusy(true);message('Sedang '+(mode==='register'?'mendaftar':'log masuk')+'…');
       try {
+        kickedForOtherDevice=false;newCredentialLogin=true;
         if(mode==='register')await api.createUserWithEmailAndPassword(auth,email,password);
         else await api.signInWithEmailAndPassword(auth,email,password);
         ui.password.value='';message('Berjaya. Menyediakan data permainan…');
-      } catch(err){message(errorMalay(err),true)}finally{setBusy(false)}
+      } catch(err){newCredentialLogin=false;message(errorMalay(err),true)}finally{setBusy(false)}
     };
     ui.reset.onclick=async()=>{
       const email=trim(ui.email.value);if(!email){message('Isi e-mel anda dahulu untuk tetapkan semula kata laluan.',true);return}
