@@ -1,1 +1,4 @@
-{"version":"pos561","updatedAt":"2026-10-18T00:18:00+08:00","notes":"Terminal keypad fixed, top tap area, larger card design update"}
+{
+  "version": "pos562",
+  "label": "POS V5.6.2 - keypad penuh dan kad lebih besar"
+}
