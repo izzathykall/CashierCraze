@@ -430,3 +430,98 @@ body[data-theme="dark"] .store-scene .speech::after{background:#263e33}
   .modern-card-scene .payment-bankcard .card-wave{font-size:11px;left:38px}
   .modern-card-scene .terminal-v2-keys{gap:6px!important;margin-top:12px!important}
 }
+
+
+/* V5.6.1 terminal polish */
+.modern-card-scene{
+  --terminal-width:206px;
+  --terminal-left:calc(50% - 112px);
+  --terminal-top:34px;
+  --bankcard-left:calc(50% + 98px);
+  --bankcard-top:58px;
+  --bankcard-width:196px;
+  --bankcard-height:124px;
+  min-height:446px;
+}
+.modern-card-scene .terminal-v2{
+  height:338px!important;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:10px;
+  padding:14px 14px 16px!important;
+}
+.modern-card-scene .terminal-v2::before{inset:8px}
+.modern-card-scene .terminal-v2-top{height:10px;margin-bottom:0;border-radius:999px;background:#0f1218}
+.modern-card-scene .contact-reader{
+  order:1;
+  flex:0 0 auto;
+  margin:0!important;
+  min-height:52px!important;
+  border-radius:14px;
+  background:linear-gradient(180deg,#0b1119,#1f2731)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),0 1px 0 rgba(255,255,255,.04);
+  flex-direction:column;
+  padding:7px 10px!important;
+}
+.modern-card-scene .contact-reader .reader-icon{
+  width:26px;height:18px;display:block;position:relative;
+}
+.modern-card-scene .contact-reader .reader-icon::before,
+.modern-card-scene .contact-reader .reader-icon::after{content:'';position:absolute;inset:auto;left:50%;transform:translateX(-50%);border:2px solid transparent;border-left-color:#edf4f6;border-top-color:#edf4f6;border-radius:16px 0 0 0;opacity:.95}
+.modern-card-scene .contact-reader .reader-icon::before{width:10px;height:10px;top:4px;transform:translateX(-50%) rotate(45deg)}
+.modern-card-scene .contact-reader .reader-icon::after{width:18px;height:18px;top:0;transform:translateX(-50%) rotate(45deg);opacity:.55}
+.modern-card-scene .contact-reader small{font-size:8px!important;letter-spacing:1.4px!important;text-align:center;line-height:1.25}
+.modern-card-scene .terminal-v2-screen-frame{order:2;flex:0 0 auto;padding:10px}
+.modern-card-scene .terminal-v2-screen{height:100px!important}
+.modern-card-scene .terminal-v2-keys{
+  order:3;
+  flex:1 1 auto;
+  margin:0 6px!important;
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-auto-rows:40px;
+  align-content:start;
+  gap:8px!important;
+  overflow:hidden;
+}
+.modern-card-scene .terminal-v2-keys button{height:auto;min-height:0;font-size:14px;border-radius:8px}
+.modern-card-scene .payment-bankcard{
+  top:var(--bankcard-top)!important;
+  width:var(--bankcard-width)!important;
+  height:var(--bankcard-height)!important;
+  border-radius:16px!important;
+  padding:12px 14px 10px!important;
+}
+.modern-card-scene .payment-bankcard .bank-name{font-size:10px;letter-spacing:1.1px;margin-bottom:9px}
+.modern-card-scene .payment-bankcard .card-chip{width:26px;height:18px;margin:4px 0 10px}
+.modern-card-scene .payment-bankcard .card-wave{left:49px;top:42px;font-size:14px}
+.modern-card-scene .payment-bankcard b{font-size:12px!important;letter-spacing:1.9px!important;margin-top:24px;text-shadow:0 1px 0 rgba(0,0,0,.12)}
+.modern-card-scene .payment-bankcard small{font-size:8px!important;letter-spacing:1.2px;margin-top:12px;font-weight:700}
+.modern-card-scene .payment-bankcard em{font-size:10px!important;bottom:11px}
+.modern-card-scene .payment-bankcard .card-brand::before,.modern-card-scene .payment-bankcard .card-brand::after{width:22px;height:22px}
+.modern-card-scene .payment-bankcard .card-brand::before{right:12px}
+.modern-card-scene .payment-bankcard .card-brand::after{right:0}
+.modern-card-scene .payment-bankcard.theme-green{background:linear-gradient(135deg,#24a35f,#127344 60%,#0a4e2f)!important}
+.modern-card-scene .payment-bankcard.theme-green .card-motif{width:78px;height:66px;right:10px;top:6px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 72'%3E%3Cpath d='M58 14c12 4 18 17 11 31-6 11-22 20-40 18 7-3 16-8 23-16 8-8 11-18 12-33 0 0 2 0 4 0Z' fill='rgba(255,255,255,.25)'/%3E%3Cpath d='M45 55c4-18 13-28 28-38-4 17-12 32-28 38Z' fill='rgba(255,255,255,.18)'/%3E%3C/svg%3E") center/contain no-repeat}
+.modern-card-scene .payment-bankcard.theme-gold{background:linear-gradient(135deg,#efca74,#d4a552 62%,#c08b2f)!important;color:#2b1e0d!important}
+.modern-card-scene .payment-bankcard.theme-gold .card-motif{width:84px;height:70px;right:4px;top:2px;background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.18),transparent 30%),radial-gradient(circle at 68% 58%,rgba(255,255,255,.14),transparent 35%),linear-gradient(130deg,transparent 0 38%,rgba(255,255,255,.24) 38% 46%,transparent 46% 100%),linear-gradient(35deg,transparent 0 50%,rgba(255,255,255,.18) 50% 56%,transparent 56% 100%)}
+.modern-card-scene .payment-bankcard.theme-pink{background:linear-gradient(135deg,#f39ab2,#eb7f97 60%,#e06484)!important}
+.modern-card-scene .payment-bankcard.theme-pink .card-motif{width:84px;height:70px;right:6px;top:4px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 72'%3E%3Cpath d='M23 43c0-11 8-19 19-19 6 0 12 2 15 7 4-5 10-7 16-7 11 0 19 8 19 19 0 12-12 21-34 21S23 55 23 43Z' fill='none' stroke='rgba(255,255,255,.36)' stroke-width='2.2'/%3E%3Ccircle cx='44' cy='40' r='2' fill='rgba(255,255,255,.5)'/%3E%3Ccircle cx='63' cy='40' r='2' fill='rgba(255,255,255,.5)'/%3E%3Cpath d='M49 50c4 3 8 3 12 0' fill='none' stroke='rgba(255,255,255,.55)' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat}
+.modern-card-scene .payment-bankcard.theme-black{background:linear-gradient(135deg,#2a2a2c,#0d0e11 62%,#050608)!important}
+.modern-card-scene .payment-bankcard.theme-black .card-motif{width:84px;height:70px;right:4px;top:4px;background:repeating-linear-gradient(125deg,transparent 0 7px,rgba(255,255,255,.07) 7px 8px),linear-gradient(135deg,transparent 0 52%,rgba(255,255,255,.14) 52% 55%,transparent 55% 100%)}
+.modern-card-scene .terminal-action-label{font-size:12px;bottom:14px!important}
+@media(max-width:700px){
+  .modern-card-scene{--terminal-width:194px;--terminal-left:calc(50% - 116px);--terminal-top:34px;--bankcard-left:calc(50% + 60px);--bankcard-top:56px;--bankcard-width:172px;--bankcard-height:110px;min-height:424px}
+  .modern-card-scene .terminal-v2{height:324px!important}
+  .modern-card-scene .terminal-v2-keys{grid-auto-rows:36px}
+  .modern-card-scene .payment-bankcard b{font-size:10px!important;letter-spacing:1.5px!important;margin-top:20px}
+}
+@media(max-width:430px){
+  .modern-card-scene{--terminal-width:186px;--terminal-left:calc(50% - 114px);--bankcard-left:calc(50% + 44px);--bankcard-top:62px;--bankcard-width:156px;--bankcard-height:100px}
+  .modern-card-scene .terminal-v2{height:316px!important}
+  .modern-card-scene .terminal-v2-keys{grid-auto-rows:34px;gap:7px!important;margin:0 4px!important}
+  .modern-card-scene .payment-bankcard .bank-name{font-size:8px}
+  .modern-card-scene .payment-bankcard b{font-size:9px!important;letter-spacing:1.2px!important;margin-top:18px}
+  .modern-card-scene .payment-bankcard small{font-size:7px!important}
+}
