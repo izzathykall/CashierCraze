@@ -14,7 +14,7 @@ let paymentMinimized=false,musicUnlocked=false,musicLevel=0,musicTarget=-1,music
 let calculatorPosition=null,calculatorDrag=null,musicStarting=false,musicGain=null,musicSource=null,chaChingBuffer=null,chaChingPromise=null,chaChingSource=null;
 let renderedBasket=null,renderedSceneCustomer=undefined,selectedCodeItem=null,calculatorInput='',calculatorResult='',advancePending=false;
 const STORAGE='kedai-kita-v1';
-const APP_BUILD='2026-10-17-mobile-2';
+const APP_BUILD=window.__KEDAI_ACTIVE_VERSION__||'2026-10-17-classic-controls-v3';
 const UPDATE_CHECK_URL='./version.json';
 let storageOK=true,progress=createProgress(),session=null,phase='scan',customer=null,mode='career',combo=0,busy=false,paused=true,modalKind='intro',cashPicked=[],lastTip=0,lastEarned=0,toastTimer,audioCtx,scannerBuffer=null,scannerBufferPromise=null,scannerSource=null,sound=true,drag=null,scanToken=0;
 let updatePrompt=null,updateCheckTimer=null;
@@ -651,24 +651,94 @@ function ensureUpdatePrompt(){
  updatePrompt.type='button';
  updatePrompt.className='update-prompt';
  updatePrompt.hidden=true;
- updatePrompt.innerHTML=`<span>${icon('spark')}</span><b>Kemas kini baru tersedia</b><small>Tekan untuk muat semula game</small>`;
- updatePrompt.onclick=()=>applyRemoteUpdate();
+ updatePrompt.setAttribute('aria-live','polite');
+ updatePrompt.innerHTML=`<span>${icon('spark')}</span><span class="update-prompt-copy"><b>Versi baharu tersedia</b><small>Tekan untuk kemas kini sekarang</small></span>`;
+ updatePrompt.onclick=applyRemoteUpdate;
  document.body.append(updatePrompt);
  return updatePrompt;
 }
-function showUpdatePrompt(version='baru'){const el=ensureUpdatePrompt();el.hidden=false;el.dataset.version=version;toast('Versi baru game dikesan. Tekan notis untuk refresh.')}
-function hideUpdatePrompt(){if(updatePrompt)updatePrompt.hidden=true}
-function applyRemoteUpdate(){hideUpdatePrompt();const url=new URL(window.location.href);url.searchParams.set('refresh',String(Date.now()));window.location.replace(url.toString())}
-async function checkForRemoteUpdate(force=false){
- try{
-  const res=await fetch(`${UPDATE_CHECK_URL}?t=${Date.now()}`,{cache:'no-store'});
-  if(!res.ok)return;
-  const data=await res.json();
-  if(data?.version&&data.version!==APP_BUILD)showUpdatePrompt(data.version);
-  else if(force)hideUpdatePrompt();
- }catch{}
+function showUpdatePrompt(version='baru'){
+ if(updatingNow)return;
+ const el=ensureUpdatePrompt();el.hidden=false;el.disabled=false;el.dataset.version=version;
 }
-function startUpdateChecker(){checkForRemoteUpdate(true);clearInterval(updateCheckTimer);updateCheckTimer=setInterval(checkForRemoteUpdate,60000)}
+function hideUpdatePrompt(){if(updatePrompt)updatePrompt.hidden=true}
+let updatingNow=false;
+async function applyRemoteUpdate(){
+ if(updatingNow)return;
+ const button=ensureUpdatePrompt(),targetVersion=button.dataset.version;
+ updatingNow=true;button.disabled=true;
+ button.querySelector('.update-prompt-copy').innerHTML='<b>Sedang mengemas kini...</b><small>Sila tunggu sebentar</small>';
+ // Let any queued progress save start, then navigate with a fresh URL. The new
+ // page loads app.mjs and style.css using the latest version.json identifier.
+ try{
+  // Keep the last transaction before leaving the page. Firebase saves are
+  // normally debounced, so flush the pending snapshot explicitly.
+  save();
+  if(cloud?.getUser?.()){
+   await Promise.race([cloud.flush(),new Promise(resolve=>setTimeout(resolve,4500))]);
+  }
+  const url=new URL(location.href);
+  url.searchParams.set('release',targetVersion||String(Date.now()));
+  url.searchParams.set('refresh',String(Date.now()));
+  location.replace(url.href);
+ }catch{
+  updatingNow=false;button.disabled=false;
+  button.querySelector('.update-prompt-copy').innerHTML='<b>Kemas kini belum berjaya</b><small>Tekan untuk cuba semula</small>';
+  button.hidden=false;
+ }
+}
+async function checkForRemoteUpdate(){
+ try{
+  const response=await fetch(`${UPDATE_CHECK_URL}?check=${Date.now()}`,{cache:'no-store'});
+  if(!response.ok)return;
+  const data=await response.json();
+  if(typeof data?.version==='string'&&/^[a-zA-Z0-9._-]{1,100}$/.test(data.version)){
+    if(data.version!==APP_BUILD)showUpdatePrompt(data.version);
+    else hideUpdatePrompt();
+  }
+ }catch{ /* Unavailable network should not hide an existing update */ }
+}
+function startUpdateChecker(){
+ checkForRemoteUpdate();clearInterval(updateCheckTimer);
+ updateCheckTimer=setInterval(checkForRemoteUpdate,60000);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkForRemoteUpdate()});
+}
+
+// Mobile: move original control buttons into a collapsible bar, leaving the
+// existing game header, utility bar, conveyor and stations unchanged.
+function setupMobileControls(){
+ const nav=$('gameTools'),topbar=document.querySelector('.topbar'),slot=$('mobileControlsSlot'),toggle=$('mobileControlsToggle');
+ if(!nav||!topbar||!slot||!toggle)return;
+ const media=window.matchMedia('(max-width:760px)');
+ const update=()=>{
+  if(media.matches){
+   if(nav.parentElement!==slot)slot.append(nav);
+   nav.hidden=!nav.classList.contains('mobile-expanded');
+   toggle.setAttribute('aria-expanded',String(!nav.hidden));
+   toggle.querySelector('.mobile-chevron').textContent=nav.hidden?'▾':'▴';
+  }else{
+   if(nav.parentElement!==topbar)topbar.append(nav);
+   nav.hidden=false;nav.classList.remove('mobile-expanded');
+   toggle.setAttribute('aria-expanded','false');
+  }
+ };
+ toggle.onclick=()=>{
+  const expanded=!nav.classList.contains('mobile-expanded');
+  nav.classList.toggle('mobile-expanded',expanded);
+  nav.hidden=!expanded;toggle.setAttribute('aria-expanded',String(expanded));
+  toggle.querySelector('.mobile-chevron').textContent=expanded?'▴':'▾';
+ };
+ nav.querySelectorAll('button').forEach(button=>button.addEventListener('click',()=>{
+  if(!media.matches||!nav.classList.contains('mobile-expanded'))return;
+  nav.classList.remove('mobile-expanded');nav.hidden=true;
+  toggle.setAttribute('aria-expanded','false');
+  toggle.querySelector('.mobile-chevron').textContent='▾';
+ }));
+ if(media.addEventListener)media.addEventListener('change',update);
+ else media.addListener(update);
+ update();
+}
+setupMobileControls();
 
 // Cloud login opens over the existing start screen. The game stays usable offline.
 cloud.start();

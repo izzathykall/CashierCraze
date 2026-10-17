@@ -186,149 +186,65 @@ body[data-theme="dark"] .modern-card-scene{background:radial-gradient(ellipse at
 .account-fineprint {font-size:11px;line-height:1.5;color:#829484;text-align:center;margin-top:18px;border-top:1px solid #e0ebe0;padding-top:15px}
 @media (max-width:650px) {.account-nav-btn{padding:9px}.account-nav-btn span:last-child{display:none}.account-nav-btn .icon{width:19px;height:19px}.account-panel{border-radius:19px}}
 
-
-/* --- Mobile layout fix + smooth draggable calculator + update prompt --- */
-.floating-calculator{transform:translate3d(18px,100px,0);will-change:transform;backface-visibility:hidden;-webkit-backface-visibility:hidden;contain:layout paint}
-.floating-calculator.dragging{transition:none!important}
-.floating-calc-header,.floating-calc-body,.floating-calculator .calc-screen{transform:translateZ(0);backface-visibility:hidden;-webkit-backface-visibility:hidden}
-.update-prompt{position:fixed;right:14px;bottom:max(18px,env(safe-area-inset-bottom) + 14px);z-index:130;border:1px solid #cdd9bd;background:#f4f8ec;color:#214939;border-radius:16px;box-shadow:0 12px 30px rgba(20,47,57,.18);display:flex;align-items:center;gap:10px;padding:12px 14px;max-width:min(92vw,320px);text-align:left}
-.update-prompt span{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:12px;background:#dfead1;color:#52754f}.update-prompt svg{width:18px;height:18px}.update-prompt b{display:block;font-size:13px}.update-prompt small{display:block;font-size:11px;color:#648066;margin-top:2px}
-body[data-theme="dark"] .update-prompt{background:#22392c;border-color:#5d7851;color:#d9e8d2}body[data-theme="dark"] .update-prompt span{background:#385139;color:#cfe0be}
-@media (max-width:760px){
-  .app{padding:calc(env(safe-area-inset-top) + 8px) 12px max(12px,env(safe-area-inset-bottom) + 8px)}
-  .topbar{height:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch}
-  .brand{grid-column:1/-1;min-width:0;font-size:24px;white-space:normal;line-height:.95}
-  .brand small{letter-spacing:1.5px;margin-top:5px}
-  .day-pill,.top-stats{margin-left:0;min-width:0}
-  .day-pill{padding:10px 12px;justify-content:flex-start}
-  .top-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .top-stats>span{background:#eef1e6;border:1px solid #dde3d4;border-radius:14px;padding:10px 12px;min-width:0}
-  .top-stats b{font-size:18px;display:block;line-height:1.05}
-  .tools{grid-column:1/-1;border-left:0;padding-left:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
-  .tools .icon-btn,.tools .account-nav-btn{width:100%;min-width:0;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center}
-  .tools .icon-btn svg,.tools .account-nav-btn svg{width:20px;height:20px}
-  .account-nav-btn{padding:0 8px;font-size:11px;gap:4px}
-  .account-nav-btn span:last-child{display:inline}
-  .utility-bar{height:auto;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:2px;gap:8px;margin-bottom:10px}
-  .utility-bar::-webkit-scrollbar{display:none}
-  .utility-bar>button{flex:0 0 auto;min-width:92px;height:38px;padding:8px 10px;border-radius:12px;font-size:11px}
-  .utility-bar svg{width:14px;height:14px}
-  .activity-status{display:none}
-  .mobile-tabs{height:auto;padding-right:0;margin:0 0 10px;gap:8px}
-  .mobile-tab{min-height:42px;border-radius:12px;font-size:11px}
-  .mobile-tab b{font-size:9px;padding:3px 5px}
-  .operations-bar{gap:8px;flex-wrap:wrap;min-height:auto;padding:8px 10px;margin-bottom:10px}
-  .operations-bar>*{min-width:0}
-  .operations-bar button{min-height:36px;padding:7px 12px;border-radius:10px}
-  .section-heading{flex-wrap:wrap;align-items:flex-start}
-  .section-heading>div{flex-wrap:wrap}
-  .section-heading small{max-width:none;font-size:8px}
-  .speech{left:auto!important;right:10px!important;top:28%!important;max-width:min(42vw,172px)!important;font-size:10px;padding:10px 12px}
-  .customer-info{padding:8px 10px}
-  .patience-track{width:70px}
-  .floating-calculator{width:calc(100vw - 16px)!important;max-width:calc(100vw - 16px)!important;max-height:min(58dvh,470px);border-radius:18px;left:0!important;top:0!important;animation:none}
-  .floating-calculator .calc-screen strong{font-size:24px}
-  .floating-calculator .calc-keys button{height:44px;font-size:18px}
-  .floating-calculator .calc-presets button{min-height:34px;font-size:10px}
-  .floating-calc-header{padding:10px 10px 8px 12px}
-  .floating-calc-header #calcDragHandle{min-height:32px;cursor:default}
-  .floating-calc-header #calcDragHandle>span{display:none}
-  .floating-calc-hint{font-size:8px}
-  .update-prompt{left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom) + 10px);max-width:none}
+/* Dialogue fix — anchor bubble beside (not over) the customer's face. */
+.store-scene .speech{
+  box-sizing:border-box;
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  overflow-wrap:break-word;
+  hyphens:auto;
+  scrollbar-width:thin;
+  box-shadow:0 7px 18px #264b3a22,0 2px 0 #9bb8a426;
 }
-@media (max-width:420px){
-  .brand{font-size:21px}
-  .brand-icon{width:42px;height:42px}
-  .day-pill b{font-size:16px}
-  .top-stats b{font-size:17px}
-  .tools{grid-template-columns:repeat(4,minmax(0,1fr))}
-  .tools .account-nav-btn{grid-column:1/-1}
-  .speech{max-width:160px!important;font-size:9px}
+.store-scene .speech::after{
+  content:"";
+  position:absolute;
+  left:-6px;
+  top:55%;
+  bottom:auto;
+  width:12px;
+  height:12px;
+  border:0;
+  background:#fffdf4;
+  border-left:1px solid #ffffff88;
+  border-bottom:1px solid #ffffff88;
+  transform:rotate(45deg);
+  opacity:1;
+  pointer-events:none;
 }
+.store-scene .speech.speech-left::after{
+  left:auto;
+  right:-6px;
+  transform:rotate(225deg);
+}
+body[data-theme="dark"] .store-scene .speech::after{background:#263e33}
 
 
-/* V2 MOBILE OVERRIDES — end of stylesheet; fixed control/header collision. */
-@media (max-width:760px){
- html{overflow-x:hidden!important}
- body{overflow-x:hidden!important;overflow-y:auto!important;min-width:0!important;height:auto!important}
- .app{display:flex!important;flex-direction:column!important;height:auto!important;min-height:100dvh!important;max-height:none!important;overflow:visible!important;padding:14px 12px max(24px,env(safe-area-inset-bottom))!important}
- .topbar{position:relative!important;display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;grid-template-rows:auto auto auto!important;gap:10px 8px!important;align-items:center!important;height:auto!important;min-height:0!important;margin:0 0 12px!important;padding:0!important;overflow:visible!important}
- .topbar>.brand{grid-row:1!important;grid-column:1!important;min-width:0!important;max-width:100%!important;font-size:clamp(19px,6vw,25px)!important;white-space:nowrap!important;gap:6px!important}
- .topbar>.brand>.brand-icon{flex:none!important;width:39px!important;height:40px!important}
- .topbar>.brand small{font-size:6px!important;letter-spacing:.65px!important;white-space:nowrap!important}
- .topbar>.day-pill{grid-row:1!important;grid-column:2!important;margin:0!important;padding:8px 9px!important;gap:6px!important;min-width:0!important;max-width:100%!important;border-radius:12px!important}
- .day-pill .sun svg{width:19px!important;height:19px!important}
- .day-pill b{font-size:15px!important;white-space:nowrap!important}
- .day-pill small{font-size:6px!important;letter-spacing:1px!important}
- .day-pill .open-tag{display:none!important}
- .topbar>.top-stats{grid-row:2!important;grid-column:1/-1!important;display:flex!important;gap:8px!important;align-items:stretch!important;justify-content:stretch!important;margin:0!important;width:100%!important;min-width:0!important}
- .top-stats>span{flex:1 1 0!important;min-width:0!important;padding:9px 12px!important}
- .top-stats>span.combo-stat{display:block!important}
- .top-stats small{font-size:8px!important;letter-spacing:1px!important}
- .top-stats b{font-size:18px!important;line-height:1.1!important}
- .topbar>.tools{position:static!important;inset:auto!important;top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;transform:none!important;grid-row:3!important;grid-column:1/-1!important;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;align-items:center!important;justify-content:stretch!important;width:100%!important;max-width:100%!important;height:auto!important;gap:8px!important;border:0!important;padding:0!important;margin:0!important;z-index:10!important}
- .topbar>.tools>button{position:relative!important;grid-column:auto!important;display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;min-width:0!important;height:44px!important;min-height:44px!important;max-height:none!important;margin:0!important;padding:6px!important;transform:none!important;border-radius:12px!important;box-shadow:none!important}
- .topbar>.tools #accountBtnText{display:none!important}
- .topbar>.tools button svg{width:21px!important;height:21px!important}
- .utility-bar{position:relative!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;width:100%!important;height:auto!important;min-height:0!important;margin:0 0 12px!important;padding:0!important;overflow:visible!important}
- .utility-bar>button{position:relative!important;display:flex!important;justify-content:center!important;align-items:center!important;width:100%!important;min-width:0!important;min-height:42px!important;height:42px!important;padding:6px 5px!important;font-size:11px!important;gap:5px!important;border-radius:12px!important;flex:auto!important}
- .utility-bar>button svg{flex:none!important;width:15px!important;height:15px!important}
- .utility-bar>button>span:last-child{white-space:nowrap!important}
- .utility-bar>.activity-status{display:none!important}
- .operations-bar{position:relative!important;display:grid!important;grid-template-columns:1fr auto!important;grid-auto-rows:auto!important;gap:8px!important;align-items:center!important;width:100%!important;margin:0 0 10px!important;padding:8px 10px!important;border:1px solid var(--line)!important;border-radius:13px!important;min-height:0!important;overflow:visible!important}
- .operations-bar #storeClock{grid-column:1!important;grid-row:1!important;font-size:11px!important;white-space:normal!important}
- .operations-bar #storeStars{grid-column:2!important;grid-row:1!important;justify-self:end!important}
- .operations-bar #operationsBtn{grid-column:1!important;grid-row:2!important;justify-self:start!important;min-height:40px!important;font-size:10px!important;padding:7px 12px!important}
- .operations-bar #supplyStatus{grid-column:2!important;grid-row:2!important;justify-self:end!important;white-space:nowrap!important}
- .mobile-tabs{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;height:auto!important;min-height:45px!important;padding:0!important;margin:0 0 12px!important;position:sticky!important;top:0!important;z-index:65!important;background:var(--cream)!important}
- .mobile-tabs>.mobile-tab{width:100%!important;min-height:44px!important;max-width:none!important;padding:8px 10px!important;font-size:12px!important}
- .game-grid{display:block!important;min-height:0!important;height:auto!important;flex:none!important;overflow:visible!important}
- .game-grid>.work-area{display:flex!important;flex-direction:column!important;min-height:0!important;height:auto!important;flex:none!important;overflow:visible!important}
- body.view-payment .game-grid>.work-area{display:none!important}
- .game-grid>.pos-panel{display:none!important;flex-direction:column!important;height:auto!important;min-height:430px!important;overflow:visible!important}
- body.view-payment .game-grid>.pos-panel{display:flex!important}
- .work-area>.store-scene{height:220px!important;min-height:220px!important;max-height:220px!important;flex:none!important}
- .work-area>.belt-section{flex:none!important;min-width:0!important;padding:10px 9px!important}
- .section-heading{gap:7px!important}
- .section-heading>small{font-size:9px!important;max-width:130px!important}
- .conveyor{height:138px!important;min-height:138px!important;overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch!important;scrollbar-width:none!important;touch-action:pan-x!important;scroll-snap-type:x proximity}
- .conveyor::-webkit-scrollbar{display:none}
- .conveyor .products{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:9px!important;height:100%!important;flex:none!important;min-width:100%!important}
- .conveyor .product{flex:0 0 81px!important;width:81px!important;min-width:81px!important;height:105px!important;scroll-snap-align:start!important}
- .conveyor .product .product-name{font-size:9px!important}
- .conveyor .product .product-price{font-size:8px!important}
- .conveyor .product-illustration{height:58px!important;min-height:42px!important}
- .belt-arrow{display:none!important}
- .stations{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important;padding:12px 0!important}
- .stations>.station{height:145px!important;min-height:145px!important;border-radius:13px!important}
- .stations>.bag-zone{grid-column:1/-1!important;height:90px!important;min-height:90px!important;display:flex!important;flex-direction:row!important;justify-content:center!important;align-items:center!important;gap:12px!important;padding:12px!important}
- .stations>.bag-zone .bag-art{height:45px!important;width:38px!important;flex:none!important;margin:0!important}
- .stations>.bag-zone>b{font-size:13px!important;margin:0!important}
- .stations>.bag-zone>small{font-size:10px!important;margin:0!important}
- .shift-footer{height:auto!important;min-height:70px!important;padding:10px 0!important;margin:0!important;flex-wrap:wrap!important}
- .floating-calculator{animation:none!important;transition:none!important;will-change:transform!important;backface-visibility:hidden!important;-webkit-backface-visibility:hidden!important}
- .floating-calculator.dragging,.floating-calculator.dragging *{animation:none!important;transition:none!important}
-}
-@media (max-width:390px){
- .topbar>.brand{font-size:19px!important}
- .topbar>.brand>.brand-icon{height:37px!important;width:35px!important}
- .brand small{font-size:5.5px!important;letter-spacing:.3px!important}
- .utility-bar>button{font-size:10px!important;padding:5px 2px!important}
- .top-stats b{font-size:16px!important}
- .day-pill b{font-size:13px!important}
- .speech{max-width:150px!important;font-size:9px!important}
-}
-
-/* Phone checkout: show all products in a readable grid, not a clipped row. */
-@media (max-width:760px){
- .work-area .conveyor,.work-area .conveyor:has(.many){height:auto!important;min-height:135px!important;max-height:none!important;overflow:visible!important;touch-action:auto!important;scroll-snap-type:none!important;padding:11px!important}
- .work-area .conveyor .products{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:9px!important;width:100%!important;min-width:0!important;height:auto!important;flex:1 1 auto!important}
- .work-area .conveyor .product,.work-area .conveyor .products.many .product{width:100%!important;min-width:0!important;max-width:none!important;height:105px!important;min-height:105px!important;flex:none!important;scroll-snap-align:none!important;touch-action:none!important}
-}
-
-/* Disable desktop absolute-slot animation inside mobile 3-column grid. */
+/* Classic layout maintained; only the top game controls are collapsible. */
+.mobile-controls-slot{display:none}
+.update-prompt[hidden]{display:none!important}
+.update-prompt{position:fixed;z-index:210;right:16px;bottom:max(16px,env(safe-area-inset-bottom) + 12px);max-width:320px;display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:16px;border:1px solid #c6d8b3;background:#f8fbef;color:#214c3b;box-shadow:0 10px 28px #163b2b38;text-align:left}
+.update-prompt>span:first-child{display:grid;place-items:center;width:36px;height:36px;flex:none;background:#e2edd3;border-radius:11px}
+.update-prompt .update-prompt-copy{display:block;min-width:0}
+.update-prompt b{display:block;font-size:13px}.update-prompt small{display:block;margin-top:2px;font-size:10px;color:#64836a}
+.update-prompt:disabled{opacity:.85;cursor:wait}body[data-theme="dark"] .update-prompt{background:#273e31;color:#e5f0d9;border-color:#607f53}
+/* Avoid compositor repaint/flicker when floating calculator is dragged. */
+.floating-calculator{animation:none!important;backface-visibility:hidden;-webkit-backface-visibility:hidden;will-change:transform;contain:layout paint}
+.floating-calculator.dragging{animation:none!important;transition:none!important}
+.floating-calculator.dragging *{transition:none!important}
 @media(max-width:760px){
- .work-area .conveyor .product,.work-area .conveyor .products.many .product{position:relative!important;top:auto!important;left:auto!important;right:auto!important;bottom:auto!important;transform:none!important;transition:background .15s,opacity .15s!important;animation:none!important;visibility:visible!important;opacity:1!important;display:flex!important}
- .work-area .conveyor .product:active{transform:scale(.97)!important}
- .work-area .conveyor .product.scanned,.work-area .conveyor .products.many .product.scanned{display:none!important;pointer-events:none!important}
+ .mobile-controls-slot{display:flex;flex:none;flex-direction:column;align-items:stretch;gap:5px;margin:-2px 0 7px;padding:0;width:100%;position:relative;z-index:7}
+ .mobile-controls-toggle{align-self:flex-end;display:flex;align-items:center;justify-content:center;gap:7px;min-width:112px;min-height:34px;padding:6px 11px;border:1px solid #d9e1d1;border-radius:10px;background:#eef0e4;color:var(--ink);font-size:10px;font-weight:600;box-shadow:0 1px 2px #1b403108}
+ .mobile-controls-toggle svg{height:15px;width:15px}.mobile-chevron{font-size:15px;line-height:1}
+ .mobile-controls-slot>.tools{position:static!important;inset:auto!important;top:auto!important;bottom:auto!important;left:auto!important;right:auto!important;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;width:100%!important;max-width:100%!important;min-width:0!important;gap:7px!important;transform:none!important;border:1px solid #dbe3d4!important;border-radius:12px!important;padding:7px!important;background:#f0f2e9!important;box-shadow:0 5px 13px #25432b0d!important;margin:0!important;height:auto!important}
+ .mobile-controls-slot>.tools[hidden]{display:none!important}
+ .mobile-controls-slot>.tools>button{position:static!important;display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;min-width:0!important;max-width:none!important;height:39px!important;min-height:39px!important;padding:4px!important;margin:0!important;border-radius:10px!important}
+ .mobile-controls-slot>.tools .account-nav-btn span:last-child{display:none!important}
+ .mobile-controls-slot>.tools svg{width:18px!important;height:18px!important}
+ .mobile-tabs{padding-right:0!important}
+ .utility-bar{overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex-wrap:nowrap!important}
+ .utility-bar::-webkit-scrollbar{display:none}
+ .utility-bar>button{flex:0 0 auto!important;min-width:fit-content}
+ .update-prompt{left:12px;right:12px;bottom:max(10px,env(safe-area-inset-bottom) + 10px);max-width:none}
 }

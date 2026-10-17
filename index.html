@@ -2,9 +2,9 @@
 <html lang="ms">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="application-name" content="KedaiKita Mobile v2"><meta name="theme-color" content="#173f37"><meta name="description" content="Jaga kaunter pasar mini anda. Scan barang, timbang hasil segar, kira baki dan bina Kedai Kita!">
+<meta name="theme-color" content="#173f37"><meta name="description" content="Jaga kaunter pasar mini anda. Scan barang, timbang hasil segar, kira baki dan bina Kedai Kita!">
 <title>Kedai Kita — Cashier Simulator</title>
-<link rel="stylesheet" href="style.css?v=20261017-mobile-v2">
+<link id="gameStyles" rel="stylesheet" href="style.css?v=2026-10-17-classic-controls-v3">
 </head>
 <body>
 <div class="app" id="gameApp">
@@ -12,7 +12,7 @@
     <a class="brand" href="./" aria-label="Kedai Kita"><span class="brand-icon" data-icon="basket"></span><span>Kedai<span class="brand-light">Kita<span class="brand-dot">.</span></span><small>PASAR MINI, CERITA BESAR</small></span></a>
     <div class="day-pill"><span class="sun" data-icon="sun"></span><span><small>SYIF SEMASA</small><b id="dayLabel">Hari 01</b></span><span class="open-tag">BUKA</span></div>
     <div class="top-stats"><span><small>DUIT KEDAI</small><b id="walletLabel">RM 0.00</b></span><span class="combo-stat"><small>COMBO</small><b id="comboLabel">×0 <span>✦</span></b></span></div>
-    <nav class="tools" aria-label="Kawalan game"><button id="shopBtn" class="icon-btn" title="Naik taraf kedai" aria-label="Naik taraf kedai" data-icon="shop"></button><button id="accountBtn" class="account-nav-btn" title="Log masuk / akaun" aria-label="Akaun dan simpanan cloud"><span data-icon="user"></span><span id="accountBtnText">Akaun</span></button><button id="soundBtn" class="icon-btn" title="Bunyi" aria-label="Bunyi" data-icon="volume"></button><button id="fullBtn" class="icon-btn" title="Skrin penuh" aria-label="Skrin penuh" data-icon="expand"></button><button id="pauseBtn" class="icon-btn" title="Jeda dan bantuan" aria-label="Jeda dan bantuan" data-icon="pause"></button></nav>
+    <nav class="tools" id="gameTools" aria-label="Kawalan game"><button id="shopBtn" class="icon-btn" title="Naik taraf kedai" aria-label="Naik taraf kedai" data-icon="shop"></button><button id="accountBtn" class="account-nav-btn" title="Log masuk / akaun" aria-label="Akaun dan simpanan cloud"><span data-icon="user"></span><span id="accountBtnText">Akaun</span></button><button id="soundBtn" class="icon-btn" title="Bunyi" aria-label="Bunyi" data-icon="volume"></button><button id="fullBtn" class="icon-btn" title="Skrin penuh" aria-label="Skrin penuh" data-icon="expand"></button><button id="pauseBtn" class="icon-btn" title="Jeda dan bantuan" aria-label="Jeda dan bantuan" data-icon="pause"></button></nav>
   </header>
   <nav class="utility-bar" aria-label="Fungsi kedai">
     <button id="missionBtn"><span data-icon="flag"></span><span>Misi</span><i></i></button>
@@ -23,6 +23,9 @@
     <span id="activityStatus" class="activity-status">Kedai dibuka dengan senyuman</span>
   </nav>
   <div class="operations-bar"><span id="storeClock">08:00</span><span id="storeStars" aria-label="Bintang servis">★ ★ ★</span><button id="operationsBtn">Bekalan kedai</button><span id="supplyStatus">Resit 12</span></div>
+  <div id="mobileControlsSlot" class="mobile-controls-slot" aria-label="Kawalan permainan telefon">
+    <button id="mobileControlsToggle" type="button" class="mobile-controls-toggle" aria-controls="gameTools" aria-expanded="false"><span data-icon="settings"></span><b>Kawalan</b><span class="mobile-chevron" aria-hidden="true">▾</span></button>
+  </div>
   <div class="mobile-tabs" role="tablist" aria-label="Paparan kaunter"><button id="counterTab" class="mobile-tab active" role="tab" aria-selected="true">Kaunter <span data-icon="scan"></span></button><button id="paymentTab" class="mobile-tab" role="tab" aria-selected="false">Resit & bayaran <b id="mobileCount">0</b></button></div>
   <main class="game-grid">
     <section class="work-area" aria-label="Kaunter juruwang">
@@ -107,6 +110,21 @@
 <audio id="chaChingSound" src="./cha-ching.wav" preload="auto"></audio>
 <audio id="scannerSound" src="./scanner-beep.wav" preload="auto"></audio>
 <script src="firebase-config.js"></script>
-<script type="module" src="app.mjs?v=20261017-mobile-v2"></script>
+<script type="module">
+// Versioned loader: the currently published version.json controls the actual CSS and app version.
+// Each release only requires updating version.json after publishing the changed files.
+const fallbackBuild = '2026-10-17-classic-controls-v3';
+let activeBuild = fallbackBuild;
+try {
+  const response = await fetch('./version.json?init=' + Date.now(), {cache:'no-store'});
+  if (response.ok) {
+    const data = await response.json();
+    if (typeof data.version === 'string' && /^[a-zA-Z0-9._-]{1,100}$/.test(data.version)) activeBuild=data.version;
+  }
+} catch { /* offline: open the bundled fallback version */ }
+window.__KEDAI_ACTIVE_VERSION__=activeBuild;
+document.getElementById('gameStyles').href='./style.css?v='+encodeURIComponent(activeBuild);
+await import('./app.mjs?v='+encodeURIComponent(activeBuild));
+</script>
 <audio id="scaleSound" src="./scale-place.mp3" preload="auto"></audio>
 </body></html>
