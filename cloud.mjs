@@ -19,12 +19,19 @@ const errorMalay = error => {
     'auth/network-request-failed': 'Tiada sambungan rangkaian. Periksa internet.',
     'auth/operation-not-allowed': 'Sistem daftar masuk belum diaktifkan. Hubungi pengendali permainan.',
     'auth/unauthorized-domain': 'Log masuk belum dibenarkan untuk laman ini. Hubungi pengendali permainan.',
-    'PERMISSION_DENIED': 'Akses simpanan ditolak. Hubungi pengendali permainan.',
-    'permission-denied': 'Akses simpanan ditolak. Hubungi pengendali permainan.',
-    'unavailable': 'Simpanan dalam talian tidak dapat dihubungi. Cuba lagi apabila talian pulih.'
+    'PERMISSION_DENIED': 'Akses simpanan ditolak. Pastikan Rules telah dipublish di Realtime Database.',
+    'permission-denied': 'Akses simpanan ditolak. Pastikan Rules telah dipublish di Realtime Database.',
+    'database/permission-denied': 'Akses simpanan ditolak. Pastikan Rules telah dipublish di Realtime Database.',
+    'database/permission_denied': 'Akses simpanan ditolak. Pastikan Rules telah dipublish di Realtime Database.',
+    'unavailable': 'Simpanan dalam talian tidak dapat dihubungi. Cuba lagi apabila talian pulih.',
+    'database/unavailable': 'Pangkalan data tidak dapat dihubungi. Semak sambungan.',
+    'database/network-error': 'Masalah rangkaian semasa membaca simpanan.',
+    'database/offline': 'Sambungan pangkalan data terputus. Sambung internet dahulu.'
   };
   return codes[error?.code] || 'Terdapat masalah dengan akaun atau sambungan. Cuba lagi sebentar.';
 };
+const errorCode = error => String(error?.code || error?.name || 'UNKNOWN').replace(/[^a-zA-Z0-9/_:-]/g,'').slice(0,80);
+
 const readLocal = key => {try {return JSON.parse(localStorage.getItem(key)||'null')} catch {return null}};
 const writeLocal = (key, state) => {try {localStorage.setItem(key, JSON.stringify(state));return true} catch {return false}};
 const isMeaningful = data => !!(data && (data?.progress?.day > 1 || data?.progress?.served > 0 || data?.progress?.wallet > 0 || data?.session));
@@ -98,8 +105,8 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
     if(kickingOut||!user||user.uid!==uid)return;
     kickingOut=true;kickedForOtherDevice=true;ready=false;queued=null;syncError=null;
     clearTimeout(timer);timer=null;detachSessionWatch();activeSessionToken=null;clearSessionLocal(uid);
-    const stale=localAccount(uid);
-    if(stale?._cloudPending){stale._cloudPending=false;writeLocal(ACCOUNT_KEY(uid),stale)}
+    // Keep an unsynced local account snapshot intact for safe recovery
+    // if the player logs in again. Never overwrite it during sign-out.
     setStatus('Sesi akaun tamat');
     try{await api.signOut(auth)}catch{}
     showLogin('Akaun ini telah log masuk pada peranti lain.');
@@ -112,10 +119,9 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
     let token;
     if(replaceExisting){
       token=makeSessionToken();
-      // Server transaction serializes simultaneous logins; the latest successful
-      // credential login becomes the sole active session.
-      const result=await api.runTransaction(sessionPath(uid),()=>({token,startedAt:Date.now()}),{applyLocally:false});
-      if(!result.committed)throw new Error('Tidak dapat membuka sesi. Cuba lagi.');
+      // A confirmed server write becomes this account's active session.
+      // The other device is signed out by its realtime session watcher.
+      await api.set(sessionPath(uid),{token,startedAt:api.serverTimestamp()});
       const confirm=await api.get(sessionPath(uid));
       if(confirm.val()?.token!==token){await sessionReplaced(uid);return false}
       saveSessionLocal(uid,token);
@@ -176,12 +182,14 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
   async function finishAccount(state) {
     hide();hydrate(state);ready=true;writeLocal(currentKey,state||capture());setStatus('✓ Progres akaun dimuatkan');
   }
-  async function onSignedIn(next, token) {
+  async function onSignedIn(next, token, retryNewSession=false) {
     setIdentity(next);guestMode=false;showLoading('Menyemak sesi dan progres akaun…');
+    let loadStep='membuka sesi akaun';
     try {
-      const valid=await claimSession(next.uid,newCredentialLogin);
+      const valid=await claimSession(next.uid,newCredentialLogin||retryNewSession);
       newCredentialLogin=false;
       if(!valid||token!==epoch||user?.uid!==next.uid)return;
+      loadStep='membaca progres permainan';
       const result=await api.get(snapshotRef(next.uid));
       if(token!==epoch||user?.uid!==next.uid)return;
       const remote=result.exists()?result.val()?.state:null;
@@ -209,10 +217,18 @@ export function createCloudSync({capture, hydrate, pauseForAccount, report}) {
       await finishAccount(null);queueSave(capture());
     } catch(err) {
       if(token!==epoch)return;
+      newCredentialLogin=false;
       syncError=err;setStatus('Simpanan tidak dapat diakses');show();showRegion('error');
-      ui.title.textContent='Tidak dapat muat simpanan';ui.hint.textContent='Simpanan akaun tidak berjaya dibaca. Sila cuba lagi untuk elak kehilangan progres.';
-      message(errorMalay(err),true);
-      ui.retry.onclick=()=>{syncError=null;onSignedIn(user,epoch)};
+      ui.title.textContent='Tidak dapat muat simpanan';ui.hint.textContent='Progres anda tidak dipadam. Semak ralat di bawah atau cuba sambung semula.';
+      message(`${errorMalay(err)} (Kod: ${errorCode(err)} · ${loadStep})`,true);
+      ui.retry.onclick=()=>{
+        if(!user){showLogin('Sila log masuk semula.');return}
+        syncError=null;
+        // If creating a new session failed, retry the claim; never
+        // incorrectly treat an empty sessionStorage token as a second device.
+        const needsNewSession=!getSessionLocal(user.uid);
+        onSignedIn(user,epoch,needsNewSession);
+      };
     }
   }
   async function onAuthChange(next) {
