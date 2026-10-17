@@ -111,7 +111,7 @@
 <script type="module">
 // Versioned loader: the currently published version.json controls the actual CSS and app version.
 // Each release only requires updating version.json after publishing the changed files.
-const fallbackBuild = 'pos55';
+const fallbackBuild = '2026-10-18-audio-1';
 let activeBuild = fallbackBuild;
 try {
   const response = await fetch('./version.json?init=' + Date.now(), {cache:'no-store'});
@@ -124,5 +124,6 @@ window.__KEDAI_ACTIVE_VERSION__=activeBuild;
 document.getElementById('gameStyles').href='./style.css?v='+encodeURIComponent(activeBuild);
 await import('./app.mjs?v='+encodeURIComponent(activeBuild));
 </script>
-<audio id="scaleSound" src="./scale-place.mp3" preload="auto"></audio>
+<audio id="scaleSound" src="./digital-scale.wav" preload="auto"></audio>
+<audio id="drawerSound" src="./scale-place.mp3" preload="auto"></audio>
 </body></html>
