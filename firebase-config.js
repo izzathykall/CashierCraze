@@ -4,10 +4,10 @@
  * Kod web ini bukan private key. JANGAN tampal service-account/private key di sini.
  */
 window.KEDAI_FIREBASE_CONFIG = {
-  apiKey: "PASTE_API_KEY",
-  authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
+  apiKey: "AIzaSyAy_5y99BbfSy5jtSP6Ng2-EsHaF2jAcGo",
+  authDomain: "kedaikita-60c28.firebaseapp.com",
   databaseURL: "https://kedaikita-60c28-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "PASTE_PROJECT_ID",
-  appId: "PASTE_APP_ID",
-  messagingSenderId: "PASTE_MESSAGING_SENDER_ID"
+  projectId: "kedaikita-60c28",
+  appId: "1:775129341966:web:8cba3318195555afecdc5f",
+  messagingSenderId: "775129341966"
 };
