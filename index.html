@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#173f37"><meta name="description" content="Jaga kaunter pasar mini anda. Scan barang, timbang hasil segar, kira baki dan bina Kedai Kita!">
+<title>Kedai Kita — Cashier Simulator</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app" id="gameApp">
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Kedai Kita"><span class="brand-icon" data-icon="basket"></span><span>Kedai<span class="brand-light">Kita<span class="brand-dot">.</span></span><small>PASAR MINI, CERITA BESAR</small></span></a>
+    <div class="day-pill"><span class="sun" data-icon="sun"></span><span><small>SYIF SEMASA</small><b id="dayLabel">Hari 01</b></span><span class="open-tag">BUKA</span></div>
+    <div class="top-stats"><span><small>DUIT KEDAI</small><b id="walletLabel">RM 0.00</b></span><span class="combo-stat"><small>COMBO</small><b id="comboLabel">×0 <span>✦</span></b></span></div>
+    <nav class="tools" aria-label="Kawalan game"><button id="shopBtn" class="icon-btn" title="Naik taraf kedai" aria-label="Naik taraf kedai" data-icon="shop"></button><button id="soundBtn" class="icon-btn" title="Bunyi" aria-label="Bunyi" data-icon="volume"></button><button id="fullBtn" class="icon-btn" title="Skrin penuh" aria-label="Skrin penuh" data-icon="expand"></button><button id="pauseBtn" class="icon-btn" title="Jeda dan bantuan" aria-label="Jeda dan bantuan" data-icon="pause"></button></nav>
+  </header>
+  <nav class="utility-bar" aria-label="Fungsi kedai">
+    <button id="missionBtn"><span data-icon="flag"></span><span>Misi</span><i></i></button>
+    <button id="calcBtn"><span data-icon="calculator"></span><span>Kalkulator</span></button>
+    <button id="inventoryBtn"><span data-icon="basket"></span><span>Inventori</span></button><button id="catalogueBtn"><span data-icon="book"></span><span>Katalog</span></button>
+    <button id="settingsBtn"><span data-icon="settings"></span><span>Tetapan</span></button>
+    <button id="nightBtn" aria-label="Tukar mod gelap" aria-pressed="false"><span data-icon="moon"></span><span id="nightLabel">Gelap</span></button>
+    <span id="activityStatus" class="activity-status">Kedai dibuka dengan senyuman</span>
+  </nav>
+  <div class="operations-bar"><span id="storeClock">08:00</span><span id="storeStars" aria-label="Bintang servis">★ ★ ★</span><button id="operationsBtn">Bekalan kedai</button><span id="supplyStatus">Resit 12</span></div>
+  <div class="mobile-tabs" role="tablist" aria-label="Paparan kaunter"><button id="counterTab" class="mobile-tab active" role="tab" aria-selected="true">Kaunter <span data-icon="scan"></span></button><button id="paymentTab" class="mobile-tab" role="tab" aria-selected="false">Resit & bayaran <b id="mobileCount">0</b></button></div>
+  <main class="game-grid">
+    <section class="work-area" aria-label="Kaunter juruwang">
+      <div class="store-scene">
+        <div id="shelfLeft" class="shelf shelf-left"></div>
+        <div class="store-sign"><span>kita</span><small>SEDIKIT DEKAT. BANYAK HEMAT.</small></div>
+        <div id="shelfRight" class="shelf shelf-right"></div>
+        <div class="window"><span></span></div><div class="store-plant"><i></i><i></i><i></i><b></b></div>
+        <div class="scene-kicker"><span class="live-dot"></span> KAUNTER 01 <b>•</b> <span id="dayMood">Pagi yang ceria</span></div>
+        <div class="speech" id="speech">Hai! Jom buka kedai hari ini.<span></span></div>
+        <div class="customer" id="customerArt" aria-hidden="true"></div>
+        <div class="customer-info" id="customerInfo"><div class="mini-avatar" id="customerBadge">A</div><div><strong id="customerName">Selamat datang!</strong><small id="customerRole">Pelanggan pertama dah sampai</small></div><div class="patience-wrap"><span id="patienceIcon" data-icon="heart"></span><div class="patience-track"><i id="patienceBar"></i></div><small id="patienceText">Sabar</small></div></div>
+      </div>
+      <div class="belt-section">
+        <div class="section-heading"><div><span class="step-no">01</span><b>Barang pelanggan</b><span class="count-pill" id="itemCount">0 / 0</span><button id="undoScanBtn" class="undo-scan" title="Batalkan scan terakhir" aria-label="Batalkan scan terakhir" disabled><span data-icon="undo"></span></button></div><small id="beltHint">Tekan barang atau seret ke alat yang betul</small></div>
+        <div class="conveyor"><div class="belt-lines"></div><div id="products" class="products"></div><span class="belt-arrow" data-icon="arrow"></span></div>
+      </div>
+      <div class="stations">
+        <button class="station scanner" id="scannerZone" aria-label="Scanner barcode, seret barang berbungkus ke sini"><span class="station-label"><span data-icon="scan"></span> BARCODE SCANNER <i id="scannerLight"></i></span><div class="scanner-glass"><span class="scan-line"></span><span class="barcode-mark">▥▥▥▥</span></div><small id="scannerStatus">Sedia untuk scan</small><span class="drop-hint">Barang berbungkus</span></button>
+        <button class="station scale" id="scaleZone" aria-label="Penimbang, seret barang segar ke sini"><span class="station-label"><span data-icon="scale"></span> PENIMBANG DIGITAL<i></i></span><div class="scale-platform"><span id="scaleItem"></span><div class="scale-rings"></div></div><div class="scale-screen"><span id="weightDisplay">0.000</span><small>kg</small><b id="scaleState">READY</b></div><div class="weight-progress"><i id="weightProgress"></i></div><small class="scale-caption" id="scaleCaption">Hasil segar · timbang 1 saat</small></button>
+        <button class="bag-zone" id="bagZone" aria-label="Lihat barang dalam beg"><span class="bag-art"><i>kita.</i></span><b id="bagCount">0 barang</b><small>Tekan untuk semak</small></button>
+      </div>
+      <footer class="shift-footer"><div><span data-icon="flag"></span><span><small>MISI HARI INI</small><b id="missionText">Layan 5 pelanggan</b></span></div><div class="mission-progress"><i id="missionProgress"></i></div><b id="servedLabel">0 / 5</b><span class="footer-tip" id="footerTip">Setiap sen, satu senyuman.</span></footer>
+    </section>
+    <aside class="pos-panel" aria-label="Terminal bayaran">
+      <div class="pos-top"><div><span class="status-dot"></span> TERMINAL JURUWANG</div><span id="receiptNo">#0001</span></div>
+      <div id="paymentAvailability" class="payment-availability" aria-label="Kaedah bayaran kedai"></div>
+      <div class="receipt-title"><div class="step-no">02</div><div><h2>Resit belian</h2><p id="receiptSub">Semua yang baik, di satu kaunter.</p></div><span data-icon="receipt"></span></div>
+      <div class="receipt-list" id="receiptList"><div class="receipt-empty"><span data-icon="basket"></span><b>Barang belum discan</b><small>Tekan barang di conveyor untuk mula.</small></div></div>
+      <div class="receipt-total"><div><span>Subtotal <small id="receiptQuantity">(0 barang)</small></span><b id="subtotal">RM 0.00</b></div><div class="grand-total"><span>Jumlah</span><strong id="total">RM 0<span>.00</span></strong></div></div>
+      <div id="paymentHome"><div class="payment-area" id="paymentArea"></div></div><button id="resumePayment" class="secondary-btn resume-payment" hidden>Sambung pembayaran</button>
+      <div class="pos-foot"><span data-icon="lock"></span> KEDAI KITA <span>•</span> <span id="saveStatus">Disimpan pada peranti ini</span></div>
+    </aside>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div id="transactionResult" class="transaction-result" role="status" aria-live="polite" hidden></div>
+<div id="fxLayer" class="fx-layer" aria-hidden="true"></div>
+<section id="paymentOverlay" class="payment-overlay" role="dialog" aria-modal="true" aria-labelledby="paymentTitle" hidden>
+  <div class="payment-sheet">
+    <header class="payment-sheet-header"><div><small>KEDAI KITA · KAUNTER BAYARAN</small><h2 id="paymentTitle" tabindex="-1">Pembayaran</h2><p id="paymentCustomer"></p></div><nav aria-label="Kawalan pembayaran"><button id="paymentCalculator" class="icon-btn" aria-label="Buka kalkulator" data-icon="calculator"></button><button id="paymentSettings" class="icon-btn" aria-label="Buka tetapan" data-icon="settings"></button><button id="paymentPause" class="icon-btn" aria-label="Jeda pembayaran" data-icon="pause"></button><button id="minimizePayment" class="icon-btn" aria-label="Kecilkan panel pembayaran" data-icon="close"></button></nav></header>
+    <div id="paymentMount"></div>
+    <footer class="payment-sheet-footer"><span id="paymentInstructions">Selesaikan bayaran untuk terus ke pelanggan seterusnya.</span><b>KITA PAY</b></footer>
+  </div>
+</section>
+<section id="floatingCalculator" class="floating-calculator" role="dialog" aria-modal="false" aria-label="Kalkulator terapung" hidden></section>
+<dialog id="modal"><div id="modalContent"></div></dialog>
+<audio id="backgroundMusic" src="assets/gameplay-music.mp3" preload="metadata" loop></audio>
+<audio id="chaChingSound" src="assets/cha-ching.wav" preload="auto"></audio>
+<audio id="scannerSound" src="assets/scanner-beep.wav" preload="auto"></audio>
+<script type="module" src="app.mjs"></script>
+<audio id="scaleSound" src="assets/scale-place.mp3" preload="auto"></audio>
+</body></html>
