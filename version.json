@@ -1,1 +1,4 @@
-{"version":"pos563","updatedAt":"2026-10-18T00:50:00+08:00","notes":"Card layout redrawn in CSS to match reference style more closely"}
+{
+  "version": "pos562",
+  "label": "POS V5.6.2 - keypad penuh dan kad lebih besar"
+}
